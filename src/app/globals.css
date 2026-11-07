@@ -205,3 +205,5 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 @media (min-width: 520px) { .account-menu { top: 116px; } }
 @media (max-width: 359px) { main { padding-inline: 16px; } .app-header { padding-inline: 16px; } .event-card { padding: 14px; } .month-toolbar h2 { font-size: 16px; } .calendar-grid { border-spacing: 2px 8px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+.password-field { display: grid; gap: 8px; }
+.password-field button { justify-self: start; min-height: 44px; }

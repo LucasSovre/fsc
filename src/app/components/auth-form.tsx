@@ -14,7 +14,7 @@ const authErrors: Record<string, string> = {
 };
 
 export function AuthForm({ mode }: { mode: "connexion" | "oubli" | "nouveau" }) {
-  const [message, setMessage] = useState(""), [failed, setFailed] = useState(false);
+  const [message, setMessage] = useState(""), [failed, setFailed] = useState(false), [visible, setVisible] = useState(false);
   const [pending, setPending] = useState(false);
   const ready = useHydrated();
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -37,10 +37,11 @@ export function AuthForm({ mode }: { mode: "connexion" | "oubli" | "nouveau" }) 
   }
   return <form onSubmit={submit}>
     <fieldset disabled={pending || !ready}>
-      <legend>{mode === "connexion" ? "Se connecter" : mode === "oubli" ? "Recevoir un lien" : "Nouveau mot de passe"}</legend>
+      <legend className="sr-only">{mode === "connexion" ? "Se connecter" : mode === "oubli" ? "Recevoir un lien" : "Nouveau mot de passe"}</legend>
       {mode !== "nouveau" && <p><label>E-mail <input type="email" name="email" autoComplete="email" required maxLength={254} /></label></p>}
-      {mode !== "oubli" && <p><label>Mot de passe <input type="password" name="password" required minLength={mode === "connexion" ? 1 : 12} autoComplete={mode === "connexion" ? "current-password" : "new-password"} /></label></p>}
-      {mode !== "connexion" && mode !== "oubli" && <p>Au moins 12 caractères.</p>}
+      {mode !== "oubli" && <p className="password-field"><label>Mot de passe <input type={visible ? "text" : "password"} name="password" required minLength={mode === "connexion" ? 1 : 12} autoComplete={mode === "connexion" ? "current-password" : "new-password"} aria-describedby={mode === "nouveau" ? "password-help" : undefined} /></label>
+        <button type="button" className="button-secondary" aria-pressed={visible} onClick={() => setVisible(value => !value)}>{visible ? "Masquer" : "Afficher"}<span className="sr-only"> le mot de passe</span></button></p>}
+      {mode !== "connexion" && mode !== "oubli" && <p id="password-help" className="field-help">Au moins 12 caractères.</p>}
       <button type="submit">{pending ? "En cours…" : mode === "connexion" ? "Se connecter" : "Envoyer"}</button>
     </fieldset>
     <p role="status">{failed ? "" : message}</p>{failed && <p role="alert">{message}</p>}
