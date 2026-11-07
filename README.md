@@ -25,8 +25,9 @@ unique du Dockerfile sur GHCR, sans secret ni variable à créer : il utilise le
 Le nom du dépôt et sa branche principale sont détectés automatiquement.
 
 Publication à chaque push sur la branche principale, sur les tags `v*`, ou depuis
-**Actions → Publish containers to GHCR → Run workflow**. Les autres branches ne
-publient pas automatiquement. Les images Linux `amd64` partagent le package
+**Actions → Publish containers to GHCR → Run workflow**, uniquement si la CI
+(`.github/workflows/ci.yml` : lint, types, tests unitaires, intégration et Playwright)
+réussit. Les autres branches ne publient pas automatiquement et lancent seulement la CI. Les images Linux `amd64` partagent le package
 `ghcr.io/<propriétaire>/<dépôt>`, en minuscules :
 
 | Image | Branche principale | Tag Git `v1.2.3` | Commit précis |
