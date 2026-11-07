@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, MotionConfig } from "motion/react";
 import { Icon } from "./ui-icon";
 
 const destinations = [
@@ -20,9 +21,15 @@ const isActive = (pathname: string, href: string) => {
 
 export function Navigation() {
   const pathname = usePathname();
-  return <nav className="bottom-nav" aria-label="Navigation principale">
-    {destinations.map(({ href, label, icon }) => <Link key={href} href={href} aria-current={isActive(pathname, href) ? "page" : undefined}>
-      <Icon name={icon} /><span>{label}</span>
-    </Link>)}
-  </nav>;
+  return <MotionConfig reducedMotion="user">
+    <nav className="bottom-nav" aria-label="Navigation principale">
+      {destinations.map(({ href, label, icon }) => {
+        const active = isActive(pathname, href);
+        return <Link key={href} href={href} aria-current={active ? "page" : undefined}>
+          {active && <motion.span className="nav-pill" layoutId="nav-pill" transition={{ type: "spring", stiffness: 500, damping: 35 }} />}
+          <Icon name={icon} /><span>{label}</span>
+        </Link>;
+      })}
+    </nav>
+  </MotionConfig>;
 }
