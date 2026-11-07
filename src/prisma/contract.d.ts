@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'4308286df4b76832d315f2d1e638cdc4326067dddd7a5989ab685789270ad2b4'>;
+  StorageHashBase<'c0ec9df83980f11d05bfe1c9338c25652dbaf72d0e635544bac0360502fec5a5'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -308,6 +308,18 @@ export type StorageColumnInputTypes = ColumnTypesFromStorage<
 >;
 
 export namespace Models {
+  export type public_ApiKey = {
+    createdAt: FieldOutputTypes['public']['ApiKey']['createdAt'];
+    id: FieldOutputTypes['public']['ApiKey']['id'];
+    keyHash: FieldOutputTypes['public']['ApiKey']['keyHash'];
+    lastUsedAt: FieldOutputTypes['public']['ApiKey']['lastUsedAt'];
+    name: FieldOutputTypes['public']['ApiKey']['name'];
+    prefix: FieldOutputTypes['public']['ApiKey']['prefix'];
+    scopes: FieldOutputTypes['public']['ApiKey']['scopes'];
+    userId: FieldOutputTypes['public']['ApiKey']['userId'];
+    user: public_AuthUser;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_AppAdmin = {
     userId: FieldOutputTypes['public']['AppAdmin']['userId'];
     user: public_AuthUser;
@@ -717,6 +729,7 @@ export namespace Models {
 
 export declare const models: {
   public: {
+    ApiKey: Models.public_ApiKey;
     AppAdmin: Models.public_AppAdmin;
     AuthAccount: Models.public_AuthAccount;
     AuthOauthAccessToken: Models.public_AuthOauthAccessToken;
@@ -870,6 +883,85 @@ type ContractBase = Omit<
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'account';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly apiKey: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly keyHash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lastUsedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly prefix: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly scopes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['keyHash'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'apiKey_userId_idx_a489d58a';
+                  readonly prefix: 'apiKey_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'apiKey';
                     readonly columns: readonly ['userId'];
                   };
                   readonly target: {
@@ -3617,6 +3709,7 @@ type ContractBase = Omit<
   readonly targetFamily: 'sql';
   readonly roots: {
     readonly account: { readonly namespace: 'public' & NamespaceId; readonly model: 'AuthAccount' };
+    readonly apiKey: { readonly namespace: 'public' & NamespaceId; readonly model: 'ApiKey' };
     readonly appAdmin: { readonly namespace: 'public' & NamespaceId; readonly model: 'AppAdmin' };
     readonly calendar: { readonly namespace: 'public' & NamespaceId; readonly model: 'Calendar' };
     readonly catalog: { readonly namespace: 'public' & NamespaceId; readonly model: 'Catalog' };
@@ -3704,6 +3797,79 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly ApiKey: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly keyHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lastUsedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly prefix: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly scopes: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AuthUser';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'apiKey';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly keyHash: { readonly column: 'keyHash' };
+                readonly lastUsedAt: { readonly column: 'lastUsedAt' };
+                readonly name: { readonly column: 'name' };
+                readonly prefix: { readonly column: 'prefix' };
+                readonly scopes: { readonly column: 'scopes' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly AppAdmin: {
             readonly fields: {
               readonly userId: {

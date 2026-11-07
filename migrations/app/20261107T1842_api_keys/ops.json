@@ -1,0 +1,199 @@
+[
+  {
+    "id": "table.apiKey",
+    "label": "Create table \"apiKey\"",
+    "summary": "Creates table \"apiKey\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "apiKey"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"apiKey\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"apiKey\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"apiKey\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"apiKey\"",
+        "sql": "CREATE TABLE \"public\".\"apiKey\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"keyHash\" text NOT NULL,\n  \"lastUsedAt\" timestamptz(3),\n  \"name\" text NOT NULL,\n  \"prefix\" text NOT NULL,\n  \"scopes\" text[] NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"apiKey_scopes_elem_not_null_de6fcc8e\" CHECK (array_position(\"scopes\", NULL) IS NULL)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"apiKey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"apiKey\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"apiKey\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.apiKey.apiKey_keyHash_key",
+    "label": "Add unique constraint on \"apiKey\" (keyHash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "apiKey_keyHash_key",
+        "table": "apiKey"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"apiKey_keyHash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "apiKey_keyHash_key",
+          "public",
+          "\"public\".\"apiKey\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"apiKey_keyHash_key\" on \"apiKey\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"apiKey_keyHash_key\"",
+        "sql": "ALTER TABLE \"public\".\"apiKey\" ADD CONSTRAINT \"apiKey_keyHash_key\" UNIQUE (\"keyHash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"apiKey_keyHash_key\" exists on (keyHash)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "apiKey_keyHash_key",
+          "public",
+          "\"public\".\"apiKey\"",
+          "u",
+          "[\"keyHash\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.apiKey.apiKey_userId_idx_a489d58a",
+    "label": "Create index \"apiKey_userId_idx_a489d58a\" on \"apiKey\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "apiKey_userId_idx_a489d58a",
+        "table": "apiKey"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"apiKey_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"apiKey_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"apiKey_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"apiKey_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"apiKey_userId_idx_a489d58a\" ON \"public\".\"apiKey\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"apiKey_userId_idx_a489d58a\" exists on \"apiKey\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"apiKey_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"apiKey\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.apiKey.apiKey_userId_fkey",
+    "label": "Add foreign key \"apiKey_userId_fkey\" on \"apiKey\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "apiKey_userId_fkey",
+        "table": "apiKey"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"apiKey_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "apiKey_userId_fkey",
+          "public",
+          "\"public\".\"apiKey\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"apiKey_userId_fkey\" on \"apiKey\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"apiKey_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"apiKey\"\nADD CONSTRAINT \"apiKey_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"apiKey_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "apiKey_userId_fkey",
+          "public",
+          "\"public\".\"apiKey\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"user\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  }
+]

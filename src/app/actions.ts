@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Temporal } from "temporal-polyfill";
 import { assertAdmin, sendSmtpTest } from "../server/admin";
+import { createApiKey, revokeApiKey } from "../server/api-keys";
 import { requireUser } from "../server/session";
 import { saveSmtpConfig } from "../server/smtp";
 import { acceptInvitation, deleteEvent, leaveCalendar, revokeFeed, revokeInvitation, rotateFeed, saveEvent, saveEventReminder, savePreferences } from "../server/calendar";
@@ -15,7 +16,7 @@ import { completeTodo, deleteTodo, saveTodo, saveTodoEmailPreference } from "../
 import { addAndSyncLinkedCalendar, removeLinkedCalendar, setLinkedCalendarEnabled, syncLinkedCalendar } from "../server/linked-calendars";
 import { setTravelDays } from "../server/travel";
 
-export type ActionState = { message?: string; error?: string; href?: string; redirectTo?: string; refresh?: boolean };
+export type ActionState = { message?: string; error?: string; href?: string; secret?: string; redirectTo?: string; refresh?: boolean };
 async function run(work: (userId: string) => Promise<ActionState>): Promise<ActionState> {
   const user = await requireUser();
   try {
@@ -100,6 +101,15 @@ export async function smtpAction(_: ActionState, form: FormData) {
 }
 export async function smtpTestAction() {
   return run(async userId => ({ message: `E-mail de test envoyé à ${await sendSmtpTest(userId)}.` }));
+}
+export async function createApiKeyAction(_: ActionState, form: FormData) {
+  return run(async userId => ({
+    message: "Clé créée. Copie-la maintenant : elle ne sera plus affichée.",
+    secret: await createApiKey(userId, { name: text(form, "name"), scopes: form.getAll("scopes").map(String) }),
+  }));
+}
+export async function revokeApiKeyAction(_: ActionState, form: FormData) {
+  return run(async userId => { await revokeApiKey(userId, text(form, "id")); return { message: "Clé révoquée." }; });
 }
 export async function inviteAction(_: ActionState, form: FormData) {
   return run(async userId => {

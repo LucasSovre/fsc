@@ -24,7 +24,7 @@ export async function buildOpenApi() {
     const body = { type: "object", properties: Object.fromEntries(fields), required: required.filter(name => fields.some(([field]) => field === name)) };
     (paths[path] ??= {})[method.toLowerCase()] = {
       operationId: tool, tags: [tag], summary, description: definition.description,
-      security: [{ oauth2: [toolScope.get(tool)] }],
+      security: [{ oauth2: [toolScope.get(tool)] }, { apiKey: [] }],
       ...(parameters.length ? { parameters } : {}),
       ...(!readsQuery && fields.length ? { requestBody: { required: body.required.length > 0, content: { "application/json": { schema: body } } } } : {}),
       responses: {
@@ -39,14 +39,14 @@ export async function buildOpenApi() {
     openapi: "3.1.0",
     info: {
       title: "API FSC", version: "2.0.0",
-      description: "Équivalent REST des outils MCP de FSC. Mêmes jetons OAuth (audience `/mcp`), mêmes scopes, mêmes règles métier. Les suppressions et révocations n’exigent pas de `confirm` : l’appel explicite vaut confirmation. Les corps sont en JSON ; pour GET et DELETE, les champs d’entrée passent en paramètres de requête.",
+      description: "Équivalent REST des outils MCP de FSC. Authentification par clé d’API (en-tête `X-API-Key`) ou par jeton OAuth (audience `/mcp`), mêmes scopes, mêmes règles métier. Les suppressions et révocations n’exigent pas de `confirm` : l’appel explicite vaut confirmation. Les corps sont en JSON ; pour GET et DELETE, les champs d’entrée passent en paramètres de requête.",
     },
     servers: [{ url: `${baseURL}/api/v1` }],
     tags: [...new Set(operations.map(operation => operation.tag))].map(name => ({ name })),
     paths,
     components: {
       schemas: { Error: { type: "object", required: ["error"], properties: { error: { type: "string" } } } },
-      securitySchemes: { oauth2: { type: "oauth2", flows: { authorizationCode: { authorizationUrl: `${issuer}/oauth2/authorize`, tokenUrl: `${issuer}/oauth2/token`, scopes } } } },
+      securitySchemes: { apiKey: { type: "apiKey", in: "header", name: "X-API-Key", description: "Clé créée dans Réglages → Clés d’API ; limitée aux autorisations choisies à sa création." }, oauth2: { type: "oauth2", flows: { authorizationCode: { authorizationUrl: `${issuer}/oauth2/authorize`, tokenUrl: `${issuer}/oauth2/token`, scopes } } } },
     },
   };
 }

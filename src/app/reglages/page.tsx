@@ -4,7 +4,7 @@ import { getSmtpSummary } from "../../server/smtp";
 import { settings } from "../../server/calendar";
 import { rows } from "../../server/database";
 import { ActionForm } from "../components/action-form";
-import { feedAction, inviteAction, leaveAction, preferencesAction, revokeInvitationAction, smtpAction, smtpTestAction } from "../actions";
+import { createApiKeyAction, revokeApiKeyAction, feedAction, inviteAction, leaveAction, preferencesAction, revokeInvitationAction, smtpAction, smtpTestAction } from "../actions";
 import { PushSettings } from "../components/push-settings";
 import { ZoneInput } from "../components/event-fields";
 export default async function Page() {
@@ -51,6 +51,18 @@ export default async function Page() {
         </ActionForm>
       </section>)}
       </details>
+    </section>
+    <section><h2>Clés d’API</h2><p>Une clé permet à un script d’appeler l’API REST (<a href="/api/v1/openapi.json">spécification OpenAPI</a>) avec l’en-tête <code>X-API-Key</code>, uniquement avec les autorisations choisies. Elle n’est affichée qu’une fois.</p>
+      <ActionForm action={createApiKeyAction}>
+        <p><label>Nom <input name="name" maxLength={100} required /></label></p>
+        <fieldset><legend>Autorisations</legend>
+          {apiKeyScopes.filter(scope => scope !== "admin" || admin).map(scope => <p key={scope}><label><input type="checkbox" name="scopes" value={scope} defaultChecked={scope === "calendar:read"} /> {scope}</label></p>)}
+        </fieldset>
+        <button>Créer une clé</button>
+      </ActionForm>
+      {apiKeys.map(k => <ActionForm action={revokeApiKeyAction} key={k.id}><input type="hidden" name="id" value={k.id} />
+        <p><strong>{k.name}</strong> ({k.prefix}…) — {k.scopes.join(", ")}. Créée le {k.createdAt.toLocaleDateString("fr-FR", { timeZone: p.timeZone })}, {k.lastUsedAt ? `utilisée le ${k.lastUsedAt.toLocaleDateString("fr-FR", { timeZone: p.timeZone })}` : "jamais utilisée"}.</p>
+        <button className="button-danger">Révoquer cette clé<span className="sr-only"> ({k.name})</span></button></ActionForm>)}
     </section>
     {smtp.admin && <section><h2>E-mail (SMTP)</h2><details open={!smtp.config}><summary>Configuration du serveur</summary><p>Serveur utilisé pour les e-mails de connexion, les invitations et les rappels. Réservé aux administrateurs.</p>
       <ActionForm action={smtpAction}>

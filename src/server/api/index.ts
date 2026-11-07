@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { authenticateApiKey } from "../api-keys";
 import { auth, productionReady } from "../auth";
 import { baseURL } from "../config";
 import { unauthorized } from "../mcp";
@@ -37,18 +38,24 @@ export async function handleAPI(request: Request) {
   if (origin && origin !== new URL(baseURL).origin) return fail("Origine refusée.", 403);
   const match = matchOperation(request.method, path);
   if (!match) return fail("Route inconnue.", 404);
+  const apiKey = request.headers.get("x-api-key");
   const token = /^Bearer ([^\s]+)$/i.exec(request.headers.get("authorization") || "")?.[1];
-  if (!token || token.length > 4096) return unauthorized();
-  let principal;
-  try { principal = await auth.api.verifyFscAccess({ body: { token } }); }
-  catch { return unauthorized(); }
+  let principal: { userId: string; scopes: string[] } | null = null;
+  let revalidate = async () => {};
+  if (apiKey) principal = await authenticateApiKey(apiKey);
+  else if (token && token.length <= 4096) {
+    try { principal = await auth.api.verifyFscAccess({ body: { token } }); revalidate = async () => { await auth.api.verifyFscAccess({ body: { token } }); }; }
+    catch { principal = null; }
+  }
+  if (!principal) return unauthorized();
+  const granted = principal;
   const invoke = (async (scope: string, work: () => Promise<unknown>) => {
-    if (!principal.scopes.includes(scope)) throw new DomainError(`Autorisation manquante : ${scope}.`, 403);
-    await auth.api.verifyFscAccess({ body: { token } });
+    if (!granted.scopes.includes(scope)) throw new DomainError(`Autorisation manquante : ${scope}.`, 403);
+    await revalidate();
     return work();
   }) as unknown as ToolContext["invoke"];
   try {
-    const tool = captureTools(principal.userId, invoke).get(match.operation.tool)!;
+    const tool = captureTools(granted.userId, invoke).get(match.operation.tool)!;
     const reads = request.method === "GET" || request.method === "DELETE";
     const input: Record<string, unknown> = { ...(reads ? coerceQuery(url.searchParams, tool.schema) : await readBody(request)), ...match.params };
     if ("confirm" in (inputJsonSchema(tool.schema).properties ?? {})) input.confirm = true;

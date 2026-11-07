@@ -25,6 +25,7 @@ export function ActionForm({ action, children }: { action: (state: ActionState, 
     <div aria-live="polite">
       {pending && <p>En cours…</p>}
       {state.message && <p>{state.message}</p>}
+      {state.secret && <><p><label>Clé à copier <input readOnly value={state.secret} /></label></p><p><CopyButton value={state.secret} label="Copier la clé" /></p></>}
       {state.href && <><p><a href={state.href}>Ouvrir le lien</a></p><p><label>Adresse à copier <input readOnly value={state.href} /></label></p><p><CopyButton value={state.href} /></p></>}
     </div>
   </form>;
