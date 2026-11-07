@@ -36,7 +36,7 @@ export default async function Page() {
         {source.enabled && <ActionForm action={refreshLinkedCalendarAction}><input type="hidden" name="id" value={source.id} /><button>Actualiser maintenant</button></ActionForm>}
         <ActionForm action={toggleLinkedCalendarAction}><input type="hidden" name="id" value={source.id} /><input type="hidden" name="enabled" value={source.enabled ? "false" : "true"} /><button>{source.enabled ? "Mettre en pause" : "Reprendre la synchronisation"}</button></ActionForm>
         <details><summary>Supprimer ce calendrier lié</summary><ActionForm action={removeLinkedCalendarAction}>
-          <input type="hidden" name="id" value={source.id} /><p><label><input name="confirm" type="checkbox" required /> Supprimer ce lien et tous ses événements importés dans FSC, avec leurs rappels. Le calendrier source restera intact.</label></p><button>Supprimer le calendrier lié</button>
+          <input type="hidden" name="id" value={source.id} /><p><label><input name="confirm" type="checkbox" required /> Supprimer ce lien et tous ses événements importés dans FSC, avec leurs rappels. Le calendrier source restera intact.</label></p><button className="button-danger">Supprimer le calendrier lié</button>
         </ActionForm></details>
       </> : <p className="field-help">Ce lien est géré par l’autre personne du calendrier commun.</p>}
     </section>)}

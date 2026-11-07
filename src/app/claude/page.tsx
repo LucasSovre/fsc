@@ -13,6 +13,6 @@ export default async function Page() {
     <p>Sur un espace Team ou Enterprise, l’ajout du connecteur peut nécessiter un administrateur. Chaque personne connecte ensuite son propre compte FSC.</p>
     <h2>Connexions autorisées</h2>
     {!consents.length && <p>Aucune connexion autorisée.</p>}
-    {consents.map(c => <ActionForm key={c.clientId} action={revokeOAuthAction}><input type="hidden" name="clientId" value={c.clientId} /><p>{c.name || c.clientId}</p><button>Révoquer cette connexion</button></ActionForm>)}
+    {consents.map(c => <ActionForm key={c.clientId} action={revokeOAuthAction}><input type="hidden" name="clientId" value={c.clientId} /><p>{c.name || c.clientId}</p><button className="button-danger">Révoquer cette connexion</button></ActionForm>)}
   </>;
 }

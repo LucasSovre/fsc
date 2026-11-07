@@ -17,7 +17,7 @@ export function TodoList({ todos, today }: { todos: Todo[]; today: string }) {
       <TodoForm todo={todo} canCommon={todo.visibility === "common"} />
       <ActionForm action={deleteTodoAction}>
         <input type="hidden" name="id" value={todo.id} /><input type="hidden" name="version" value={todo.version} />
-        <p><label><input type="checkbox" name="confirm" required /> Confirmer la suppression de cette tâche.</label></p><button>Supprimer la tâche</button>
+        <p><label><input type="checkbox" name="confirm" required /> Confirmer la suppression de cette tâche.</label></p><button className="button-danger">Supprimer la tâche</button>
       </ActionForm>
     </details>
   </li>)}</ul>;
