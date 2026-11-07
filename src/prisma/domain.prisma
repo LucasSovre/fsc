@@ -28,6 +28,7 @@ model Profile {
   pushEnabled Boolean @default(false)
   reminderMode String @default("all")
   selectedTags String[] @default([])
+  todoEmailEnabled Boolean @default(true)
   @@check(expression: sql`"reminderMinutes" >= 0 AND "reminderMinutes" <= 525600 AND "reminderMode" IN ('all', 'tags')`, name: "profile_preferences")
   @@map("profile")
 }
@@ -86,10 +87,34 @@ model Event {
   version Int @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+  linkedCalendarId String?
+  linkedCalendar LinkedCalendar? @relation(fields: [linkedCalendarId], references: [id], onDelete: Cascade)
+  sourceKey String?
+  @@unique([linkedCalendarId, sourceKey])
+  @@check(expression: sql`("linkedCalendarId" IS NULL) = ("sourceKey" IS NULL)`, name: "event_source")
   @@index([calendarId, startsAt])
   @@index([calendarId, startDate])
   @@check(expression: sql`( "allDay" AND "startDate" IS NOT NULL AND "endDate" > "startDate" AND "startsAt" IS NULL AND "endsAt" IS NULL ) OR (NOT "allDay" AND "startsAt" IS NOT NULL AND "endsAt" > "startsAt" AND "startDate" IS NULL AND "endDate" IS NULL)`, name: "event_dates")
   @@map("event")
+}
+
+model LinkedCalendar {
+  id String @id
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendarId String
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  name String
+  encryptedUrl String
+  urlHash String
+  enabled Boolean @default(true)
+  nextSyncAt DateTime @default(now())
+  lastSyncedAt DateTime?
+  lastError String?
+  syncToken String?
+  @@unique([calendarId, urlHash])
+  @@index([enabled, nextSyncAt])
+  @@map("linkedCalendar")
 }
 
 model Feed {
@@ -113,6 +138,22 @@ model PushSubscription {
   createdAt DateTime @default(now())
   @@index([userId])
   @@map("pushSubscription")
+}
+
+model EventReminderPreference {
+  id String @id
+  eventId String
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode String
+  reminderMinutes Int @default(30)
+  emailEnabled Boolean @default(false)
+  pushEnabled Boolean @default(false)
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@check(expression: sql`mode IN ('off', 'custom') AND "reminderMinutes" >= 0 AND "reminderMinutes" <= 525600 AND (mode = 'off' OR "emailEnabled" OR "pushEnabled")`, name: "event_reminder_preferences")
+  @@map("eventReminderPreference")
 }
 
 model Reminder {
@@ -141,6 +182,35 @@ model Delivery {
   status String
   @@unique([reminderId, destination])
   @@map("delivery")
+}
+
+model Todo {
+  id String @id
+  calendarId String
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator AuthUser @relation(fields: [creatorId], references: [id])
+  title String
+  dueDate String?
+  completedAt DateTime?
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  @@index([calendarId, completedAt, dueDate])
+  @@map("todo")
+}
+
+model TodoDigest {
+  id String @id
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day String
+  status String
+  attempts Int @default(1)
+  retryAt DateTime
+  sentAt DateTime?
+  @@unique([userId, day])
+  @@check(expression: sql`status IN ('pending', 'dispatching', 'sent', 'cancelled', 'failed', 'uncertain') AND attempts >= 1 AND attempts <= 4`, name: "todo_digest_state")
+  @@map("todoDigest")
 }
 
 model WorkerHeartbeat {

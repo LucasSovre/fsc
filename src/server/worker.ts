@@ -2,9 +2,12 @@ import * as webpush from "web-push";
 import { rows, transaction, type Connection } from "./database";
 import { reminderPlan } from "./reminder-plan";
 import { accessibleCalendar, tokenHash } from "./calendar";
-import type { Event, Profile } from "./types";
+import type { Event, EventReminderChoice, Profile } from "./types";
 import { sendMail } from "./mail";
 import { baseURL } from "./config";
+import { overdueTodos } from "./todo";
+import { todoDigestDay, todoDigestText } from "./todo-mail";
+import { syncLinkedCalendars } from "./linked-calendars";
 
 type Reminder = { id: string; eventId: string; userId: string; channel: "email" | "push"; dueAt: Date; referenceAt: Date; status: string; attempts: number };
 export type Sender = { email: typeof sendMail; push: (subscription: webpush.PushSubscription, payload: string) => Promise<unknown> };
@@ -29,16 +32,69 @@ async function current(db: Connection, reminder: Reminder) {
   const [user] = await rows<{ email: string; emailVerified: boolean }>('SELECT email,"emailVerified" FROM "user" WHERE id=$1', [reminder.userId], db);
   if (!event || !profile || !user?.emailVerified) return null;
   try { await accessibleCalendar(db, reminder.userId, event.calendarId); } catch { return null; }
-  const enabled = reminder.channel === "email" ? profile.emailEnabled : profile.pushEnabled;
-  const plan = enabled ? reminderPlan(event, profile) : null;
-  return plan ? { event, profile, user, plan } : null;
+  const [preference] = await rows<EventReminderChoice>('SELECT * FROM "eventReminderPreference" WHERE "eventId"=$1 AND "userId"=$2', [event.id, reminder.userId], db);
+  const plan = reminderPlan(event, profile, preference);
+  const enabled = plan && (reminder.channel === "email" ? plan.emailEnabled : plan.pushEnabled);
+  return enabled ? { event, profile, user, plan } : null;
 }
 
 export async function recoverInterrupted() {
   // A dispatch whose process died may have reached a provider. Never replay it.
-  await transaction(async db => { await db.query("UPDATE reminder SET status='uncertain' WHERE status='dispatching'"); });
+  await transaction(async db => {
+    await db.query("UPDATE reminder SET status='uncertain' WHERE status='dispatching'");
+    await db.query('UPDATE "todoDigest" SET status=\'uncertain\' WHERE status=\'dispatching\'');
+  });
+}
+type TodoDigestJob = { id: string; userId: string; day: string; attempts: number };
+async function todoRecipient(db: Connection, userId: string) {
+  const [recipient] = await rows<{ email: string; timeZone: string }>(`SELECT u.email,p."timeZone" FROM profile p JOIN "user" u ON u.id=p."userId"
+    WHERE p."userId"=$1 AND p."todoEmailEnabled" AND u."emailVerified"`, [userId], db);
+  return recipient;
+}
+export async function tickTodoDigests(email: Sender["email"] = sendMail, now = new Date()) {
+  const users = await rows<{ userId: string }>('SELECT p."userId" FROM profile p JOIN "user" u ON u.id=p."userId" WHERE p."todoEmailEnabled" AND u."emailVerified" ORDER BY p."userId"');
+  let count = 0;
+  for (const { userId } of users) {
+    const job = await transaction(async db => {
+      const recipient = await todoRecipient(db, userId);
+      const day = recipient && todoDigestDay(now, recipient.timeZone);
+      if (!day) return null;
+      await db.query('UPDATE "todoDigest" SET status=\'cancelled\' WHERE "userId"=$1 AND day<$2 AND status=\'pending\'', [userId, day]);
+      if (!(await overdueTodos(db, userId, day)).length) return null;
+      const [claimed] = await rows<TodoDigestJob>(`INSERT INTO "todoDigest"(id,"userId",day,status,attempts,"retryAt")
+        VALUES(gen_random_uuid()::text,$1,$2,'dispatching',1,$3)
+        ON CONFLICT("userId",day) DO UPDATE SET status='dispatching',attempts="todoDigest".attempts+1
+        WHERE "todoDigest".status='pending' AND "todoDigest"."retryAt"<=$3 AND "todoDigest".attempts<4 RETURNING *`, [userId, day, now], db);
+      return claimed ?? null;
+    });
+    if (!job) continue;
+    count++;
+    await transaction(async db => {
+      const [claimed] = await rows('SELECT id FROM "todoDigest" WHERE id=$1 AND status=\'dispatching\'', [job.id], db);
+      if (!claimed) return;
+      const recipient = await todoRecipient(db, userId);
+      const todos = recipient && todoDigestDay(now, recipient.timeZone) === job.day ? await overdueTodos(db, userId, job.day) : [];
+      if (!recipient || !todos.length) {
+        // No email was attempted; keep today's slot available if work becomes overdue later.
+        await db.query('DELETE FROM "todoDigest" WHERE id=$1', [job.id]);
+        return;
+      }
+      let status = "sent";
+      try {
+        await email(recipient.email, `FSC — ${todos.length} tâche${todos.length > 1 ? "s" : ""} en retard`, todoDigestText(todos, `${baseURL}/todo`));
+      } catch (error) {
+        const result = failure(error);
+        status = result === "retry" && job.attempts < 4 ? "pending" : result === "uncertain" ? "uncertain" : "failed";
+      }
+      await db.query(`UPDATE "todoDigest" SET status=$2,"sentAt"=CASE WHEN $2='sent' THEN $3::timestamptz ELSE NULL END,"retryAt"=$4 WHERE id=$1`,
+        [job.id, status, now, new Date(now.getTime() + Math.min(30 * 2 ** job.attempts, 600) * 1000)]);
+    });
+  }
+  return count;
 }
 export async function tick(sender: Sender = defaultSender, now = new Date()) {
+  // Refresh before dispatch so changed/cancelled source events update their pending reminders first.
+  await syncLinkedCalendars(undefined, now);
   let count = 0;
   while (count < 100) {
     const reminder = await transaction(async db => {
@@ -55,7 +111,7 @@ export async function tick(sender: Sender = defaultSender, now = new Date()) {
       const data = await current(db, reminder);
       // A zero-minute reminder necessarily runs just after its reference time.
       // Allow two polling intervals for normal dispatch, not a late catch-up.
-      const expired = data && data.plan.referenceAt.getTime() + (data.profile.reminderMinutes === 0 ? 60_000 : 0) < now.getTime();
+      const expired = data && data.plan.referenceAt.getTime() + (data.plan.reminderMinutes === 0 ? 60_000 : 0) < now.getTime();
       if (!data || expired) {
         await db.query("UPDATE reminder SET status='cancelled' WHERE id=$1", [reminder.id]); return;
       }
@@ -95,6 +151,7 @@ export async function tick(sender: Sender = defaultSender, now = new Date()) {
       [reminder.id, next, new Date(now.getTime() + Math.min(30 * 2 ** reminder.attempts, 600) * 1000)]);
     });
   }
+  count += await tickTodoDigests(sender.email, now);
   await transaction(async db => { await db.query(`INSERT INTO "workerHeartbeat"(id,"updatedAt") VALUES('worker',now()) ON CONFLICT(id) DO UPDATE SET "updatedAt"=now()`); });
   return count;
 }

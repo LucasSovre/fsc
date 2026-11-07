@@ -6,5 +6,5 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ j
   const user = await requireUser(), state = await settings(user.id), { jour } = await searchParams;
   let day: string | undefined;
   try { if (jour) day = dateValue(jour); } catch { /* Use today for an invalid optional date. */ }
-  return <><h1>Créer un événement</h1><EventForm zone={state.profile.timeZone} tags={state.tags} canCommon={state.calendars.some(c => c.kind === "common")} creator day={day} /></>;
+  return <><h1>Créer un événement</h1><EventForm zone={state.profile.timeZone} tags={state.tags} canCommon={state.calendars.some(c => c.kind === "common")} creator day={day} reminderDefaults={state.profile} /></>;
 }

@@ -1,0 +1,662 @@
+[
+  {
+    "id": "table.linkedCalendar",
+    "label": "Create table \"linkedCalendar\"",
+    "summary": "Creates table \"linkedCalendar\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "linkedCalendar"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"linkedCalendar\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"linkedCalendar\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"linkedCalendar\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"linkedCalendar\"",
+        "sql": "CREATE TABLE \"public\".\"linkedCalendar\" (\n  \"calendarId\" text NOT NULL,\n  \"enabled\" bool DEFAULT true NOT NULL,\n  \"encryptedUrl\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"lastError\" text,\n  \"lastSyncedAt\" timestamptz(3),\n  \"name\" text NOT NULL,\n  \"nextSyncAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"syncToken\" text,\n  \"urlHash\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"linkedCalendar\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"linkedCalendar\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"linkedCalendar\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.event.linkedCalendarId",
+    "label": "Add column \"linkedCalendarId\" to \"event\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "linkedCalendarId",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"linkedCalendarId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "linkedCalendarId"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"linkedCalendarId\" on \"event\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"linkedCalendarId\"",
+        "sql": "ALTER TABLE \"public\".\"event\" ADD COLUMN \"linkedCalendarId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"linkedCalendarId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "linkedCalendarId"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"linkedCalendarId\" on \"event\""
+        }
+      },
+      {
+        "description": "verify column \"linkedCalendarId\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "linkedCalendarId",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.event.sourceKey",
+    "label": "Add column \"sourceKey\" to \"event\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "sourceKey",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"sourceKey\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "sourceKey"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"sourceKey\" on \"event\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"sourceKey\"",
+        "sql": "ALTER TABLE \"public\".\"event\" ADD COLUMN \"sourceKey\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"sourceKey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "sourceKey"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"sourceKey\" on \"event\""
+        }
+      },
+      {
+        "description": "verify column \"sourceKey\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "sourceKey",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.event.event_source_b5d5c4ba",
+    "label": "Add check constraint \"event_source_b5d5c4ba\" on \"event\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "event_source_b5d5c4ba",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"event_source_b5d5c4ba\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "event_source_b5d5c4ba",
+          "public",
+          "\"public\".\"event\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"event_source_b5d5c4ba\" on \"event\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"event_source_b5d5c4ba\"",
+        "sql": "ALTER TABLE \"public\".\"event\" ADD CONSTRAINT \"event_source_b5d5c4ba\" CHECK ((\"linkedCalendarId\" IS NULL) = (\"sourceKey\" IS NULL))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"event_source_b5d5c4ba\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "event_source_b5d5c4ba",
+          "public",
+          "\"public\".\"event\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.event.event_linkedCalendarId_sourceKey_key",
+    "label": "Add unique constraint on \"event\" (linkedCalendarId, sourceKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "event_linkedCalendarId_sourceKey_key",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"event_linkedCalendarId_sourceKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "event_linkedCalendarId_sourceKey_key",
+          "public",
+          "\"public\".\"event\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"event_linkedCalendarId_sourceKey_key\" on \"event\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"event_linkedCalendarId_sourceKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"event\" ADD CONSTRAINT \"event_linkedCalendarId_sourceKey_key\" UNIQUE (\"linkedCalendarId\", \"sourceKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"event_linkedCalendarId_sourceKey_key\" exists on (linkedCalendarId, sourceKey)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "event_linkedCalendarId_sourceKey_key",
+          "public",
+          "\"public\".\"event\"",
+          "u",
+          "[\"linkedCalendarId\",\"sourceKey\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.linkedCalendar.linkedCalendar_calendarId_urlHash_key",
+    "label": "Add unique constraint on \"linkedCalendar\" (calendarId, urlHash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "linkedCalendar_calendarId_urlHash_key",
+        "table": "linkedCalendar"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"linkedCalendar_calendarId_urlHash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "linkedCalendar_calendarId_urlHash_key",
+          "public",
+          "\"public\".\"linkedCalendar\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"linkedCalendar_calendarId_urlHash_key\" on \"linkedCalendar\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"linkedCalendar_calendarId_urlHash_key\"",
+        "sql": "ALTER TABLE \"public\".\"linkedCalendar\" ADD CONSTRAINT \"linkedCalendar_calendarId_urlHash_key\" UNIQUE (\"calendarId\", \"urlHash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"linkedCalendar_calendarId_urlHash_key\" exists on (calendarId, urlHash)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "linkedCalendar_calendarId_urlHash_key",
+          "public",
+          "\"public\".\"linkedCalendar\"",
+          "u",
+          "[\"calendarId\",\"urlHash\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.event.event_linkedCalendarId_idx_d2d25352",
+    "label": "Create index \"event_linkedCalendarId_idx_d2d25352\" on \"event\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "event_linkedCalendarId_idx_d2d25352",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"event_linkedCalendarId_idx_d2d25352\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"event_linkedCalendarId_idx_d2d25352\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"event_linkedCalendarId_idx_d2d25352\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"event_linkedCalendarId_idx_d2d25352\"",
+        "sql": "CREATE INDEX \"event_linkedCalendarId_idx_d2d25352\" ON \"public\".\"event\" (\"linkedCalendarId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"event_linkedCalendarId_idx_d2d25352\" exists on \"event\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"event_linkedCalendarId_idx_d2d25352\"",
+          "i",
+          "I",
+          "\"public\".\"event\"",
+          "btree",
+          "[\"linkedCalendarId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.linkedCalendar.linkedCalendar_calendarId_idx_51abb0b3",
+    "label": "Create index \"linkedCalendar_calendarId_idx_51abb0b3\" on \"linkedCalendar\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "linkedCalendar_calendarId_idx_51abb0b3",
+        "table": "linkedCalendar"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"linkedCalendar_calendarId_idx_51abb0b3\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"linkedCalendar_calendarId_idx_51abb0b3\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"linkedCalendar_calendarId_idx_51abb0b3\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"linkedCalendar_calendarId_idx_51abb0b3\"",
+        "sql": "CREATE INDEX \"linkedCalendar_calendarId_idx_51abb0b3\" ON \"public\".\"linkedCalendar\" (\"calendarId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"linkedCalendar_calendarId_idx_51abb0b3\" exists on \"linkedCalendar\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"linkedCalendar_calendarId_idx_51abb0b3\"",
+          "i",
+          "I",
+          "\"public\".\"linkedCalendar\"",
+          "btree",
+          "[\"calendarId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.linkedCalendar.linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c",
+    "label": "Create index \"linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c\" on \"linkedCalendar\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c",
+        "table": "linkedCalendar"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c\"",
+        "sql": "CREATE INDEX \"linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c\" ON \"public\".\"linkedCalendar\" (\"enabled\", \"nextSyncAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c\" exists on \"linkedCalendar\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c\"",
+          "i",
+          "I",
+          "\"public\".\"linkedCalendar\"",
+          "btree",
+          "[\"enabled\",\"nextSyncAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.linkedCalendar.linkedCalendar_userId_idx_a489d58a",
+    "label": "Create index \"linkedCalendar_userId_idx_a489d58a\" on \"linkedCalendar\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "linkedCalendar_userId_idx_a489d58a",
+        "table": "linkedCalendar"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"linkedCalendar_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"linkedCalendar_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"linkedCalendar_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"linkedCalendar_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"linkedCalendar_userId_idx_a489d58a\" ON \"public\".\"linkedCalendar\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"linkedCalendar_userId_idx_a489d58a\" exists on \"linkedCalendar\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"linkedCalendar_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"linkedCalendar\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.linkedCalendar.linkedCalendar_userId_fkey",
+    "label": "Add foreign key \"linkedCalendar_userId_fkey\" on \"linkedCalendar\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "linkedCalendar_userId_fkey",
+        "table": "linkedCalendar"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"linkedCalendar_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "linkedCalendar_userId_fkey",
+          "public",
+          "\"public\".\"linkedCalendar\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"linkedCalendar_userId_fkey\" on \"linkedCalendar\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"linkedCalendar_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"linkedCalendar\"\nADD CONSTRAINT \"linkedCalendar_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"linkedCalendar_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "linkedCalendar_userId_fkey",
+          "public",
+          "\"public\".\"linkedCalendar\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"user\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.linkedCalendar.linkedCalendar_calendarId_fkey",
+    "label": "Add foreign key \"linkedCalendar_calendarId_fkey\" on \"linkedCalendar\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "linkedCalendar_calendarId_fkey",
+        "table": "linkedCalendar"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"linkedCalendar_calendarId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "linkedCalendar_calendarId_fkey",
+          "public",
+          "\"public\".\"linkedCalendar\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"linkedCalendar_calendarId_fkey\" on \"linkedCalendar\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"linkedCalendar_calendarId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"linkedCalendar\"\nADD CONSTRAINT \"linkedCalendar_calendarId_fkey\"\nFOREIGN KEY (\"calendarId\")\nREFERENCES \"public\".\"calendar\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"linkedCalendar_calendarId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "linkedCalendar_calendarId_fkey",
+          "public",
+          "\"public\".\"linkedCalendar\"",
+          "f",
+          "[\"calendarId\"]",
+          "\"public\".\"calendar\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.event.event_linkedCalendarId_fkey",
+    "label": "Add foreign key \"event_linkedCalendarId_fkey\" on \"event\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "event_linkedCalendarId_fkey",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"event_linkedCalendarId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "event_linkedCalendarId_fkey",
+          "public",
+          "\"public\".\"event\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"event_linkedCalendarId_fkey\" on \"event\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"event_linkedCalendarId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"event\"\nADD CONSTRAINT \"event_linkedCalendarId_fkey\"\nFOREIGN KEY (\"linkedCalendarId\")\nREFERENCES \"public\".\"linkedCalendar\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"event_linkedCalendarId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "event_linkedCalendarId_fkey",
+          "public",
+          "\"public\".\"event\"",
+          "f",
+          "[\"linkedCalendarId\"]",
+          "\"public\".\"linkedCalendar\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  }
+]

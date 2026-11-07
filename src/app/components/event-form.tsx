@@ -1,9 +1,10 @@
 import { Temporal } from "temporal-polyfill";
-import type { Event, Tag } from "../../server/types";
+import type { Event, EventReminderChoice, Profile, Tag } from "../../server/types";
 import { eventAction } from "../actions";
 import { ActionForm } from "./action-form";
 import { EventDates } from "./event-fields";
-export function EventForm({ event, zone, tags, canCommon, creator, day }: { event?: Event; zone: string; tags: Tag[]; canCommon: boolean; creator: boolean; day?: string }) {
+import { EventReminderFields } from "./event-reminder-fields";
+export function EventForm({ event, zone, tags, canCommon, creator, day, reminder, reminderDefaults }: { event?: Event; zone: string; tags: Tag[]; canCommon: boolean; creator: boolean; day?: string; reminder?: EventReminderChoice; reminderDefaults: Pick<Profile, "reminderMinutes" | "emailEnabled" | "pushEnabled"> }) {
   const tz = event?.timeZone || zone;
   const start = event?.startsAt ? Temporal.Instant.from(event.startsAt.toISOString()).toZonedDateTimeISO(tz).toPlainDateTime()
     : day ? Temporal.PlainDate.from(day).toPlainDateTime("09:00") : Temporal.Now.zonedDateTimeISO(zone).toPlainDateTime().round({ smallestUnit: "hour", roundingMode: "ceil" });
@@ -11,9 +12,11 @@ export function EventForm({ event, zone, tags, canCommon, creator, day }: { even
   const startDate = event?.startDate || start.toPlainDate().toString();
   const endDate = event?.endDate || Temporal.PlainDate.from(startDate).add({ days: 1 }).toString();
   return <ActionForm action={eventAction}>
-    <fieldset><legend>Qui peut voir cet événement ?</legend>
-      <p><label><input type="radio" name="visibility" value="common" required defaultChecked={event?.visibility === "common"} disabled={!canCommon || (!!event && !creator && event.visibility !== "common")} /> Commun — visible et modifiable par vous deux</label></p>
-      <p><label><input type="radio" name="visibility" value="solo" required defaultChecked={event?.visibility === "solo"} disabled={!!event && !creator && event.visibility !== "solo"} /> Solo — visible uniquement par toi</label></p>
+    <fieldset className="visibility-field"><legend>Qui peut voir cet événement ?</legend>
+      <div className="visibility-options">
+        <label className="visibility-option visibility-solo"><input type="radio" name="visibility" value="solo" required defaultChecked={event?.visibility === "solo"} disabled={!!event && !creator && event.visibility !== "solo"} /><span>Solo<span className="sr-only"> — visible uniquement par toi</span></span><svg className="visibility-check" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9" /><path d="m6 10 3 3 5-6" /></svg></label>
+        <label className="visibility-option visibility-common"><input type="radio" name="visibility" value="common" required defaultChecked={event?.visibility === "common"} disabled={!canCommon || (!!event && !creator && event.visibility !== "common")} /><span>Commun<span className="sr-only"> — visible et modifiable par vous deux</span></span><svg className="visibility-check" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9" /><path d="m6 10 3 3 5-6" /></svg></label>
+      </div>
       {!canCommon && <p>Invite une personne depuis les réglages pour créer des événements communs.</p>}
       {event && creator && <p><label><input type="checkbox" name="confirmVisibility" /> Je confirme un éventuel changement de visibilité. Une personne peut déjà avoir consulté ou exporté cet événement.</label></p>}
     </fieldset>
@@ -26,6 +29,8 @@ export function EventForm({ event, zone, tags, canCommon, creator, day }: { even
       {tags.map(tag => <p key={tag.key}><label><input type="checkbox" name="tags" value={tag.key} defaultChecked={event?.tags.includes(tag.key)} /> {tag.label}</label></p>)}
       <p><label>Nouveaux tags, séparés par des virgules <input name="newTags" maxLength={1800} /></label></p>
       <p>Les noms de tags sont partagés dans le couple. Les événements solo associés restent privés.</p>
-    </fieldset><button type="submit">{event ? "Enregistrer les modifications" : "Créer l’événement"}</button>
+    </fieldset>
+    <EventReminderFields initial={reminder} defaults={reminderDefaults} />
+    <button type="submit">{event ? "Enregistrer les modifications" : "Créer l’événement"}</button>
   </ActionForm>;
 }

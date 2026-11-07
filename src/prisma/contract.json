@@ -24,12 +24,20 @@
       "model": "Event",
       "namespace": "public"
     },
+    "eventReminderPreference": {
+      "model": "EventReminderPreference",
+      "namespace": "public"
+    },
     "feed": {
       "model": "Feed",
       "namespace": "public"
     },
     "invitation": {
       "model": "Invitation",
+      "namespace": "public"
+    },
+    "linkedCalendar": {
+      "model": "LinkedCalendar",
       "namespace": "public"
     },
     "member": {
@@ -86,6 +94,14 @@
     },
     "tag": {
       "model": "Tag",
+      "namespace": "public"
+    },
+    "todo": {
+      "model": "Todo",
+      "namespace": "public"
+    },
+    "todoDigest": {
+      "model": "TodoDigest",
       "namespace": "public"
     },
     "user": {
@@ -2185,8 +2201,22 @@
                   "kind": "scalar"
                 }
               },
+              "linkedCalendarId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "location": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sourceKey": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -2283,6 +2313,22 @@
                   "model": "AuthUser",
                   "namespace": "public"
                 }
+              },
+              "linkedCalendar": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "linkedCalendarId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "LinkedCalendar",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -2311,8 +2357,14 @@
                 "id": {
                   "column": "id"
                 },
+                "linkedCalendarId": {
+                  "column": "linkedCalendarId"
+                },
                 "location": {
                   "column": "location"
+                },
+                "sourceKey": {
+                  "column": "sourceKey"
                 },
                 "startDate": {
                   "column": "startDate"
@@ -2338,6 +2390,120 @@
               },
               "namespaceId": "public",
               "table": "event"
+            }
+          },
+          "EventReminderPreference": {
+            "fields": {
+              "emailEnabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "eventId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "mode": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "pushEnabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "reminderMinutes": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "event": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "eventId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Event",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AuthUser",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "emailEnabled": {
+                  "column": "emailEnabled"
+                },
+                "eventId": {
+                  "column": "eventId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "mode": {
+                  "column": "mode"
+                },
+                "pushEnabled": {
+                  "column": "pushEnabled"
+                },
+                "reminderMinutes": {
+                  "column": "reminderMinutes"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "eventReminderPreference"
             }
           },
           "Feed": {
@@ -2583,6 +2749,166 @@
               "table": "invitation"
             }
           },
+          "LinkedCalendar": {
+            "fields": {
+              "calendarId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "enabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "encryptedUrl": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastError": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastSyncedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "nextSyncAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "syncToken": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "urlHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "calendar": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "calendarId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Calendar",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AuthUser",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "calendarId": {
+                  "column": "calendarId"
+                },
+                "enabled": {
+                  "column": "enabled"
+                },
+                "encryptedUrl": {
+                  "column": "encryptedUrl"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastError": {
+                  "column": "lastError"
+                },
+                "lastSyncedAt": {
+                  "column": "lastSyncedAt"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "nextSyncAt": {
+                  "column": "nextSyncAt"
+                },
+                "syncToken": {
+                  "column": "syncToken"
+                },
+                "urlHash": {
+                  "column": "urlHash"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "linkedCalendar"
+            }
+          },
           "Member": {
             "fields": {
               "calendarId": {
@@ -2708,6 +3034,13 @@
                   "kind": "scalar"
                 }
               },
+              "todoEmailEnabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "userId": {
                 "nullable": false,
                 "type": {
@@ -2791,6 +3124,9 @@
                 },
                 "timeZone": {
                   "column": "timeZone"
+                },
+                "todoEmailEnabled": {
+                  "column": "todoEmailEnabled"
                 },
                 "userId": {
                   "column": "userId"
@@ -3090,6 +3426,240 @@
               },
               "namespaceId": "public",
               "table": "tag"
+            }
+          },
+          "Todo": {
+            "fields": {
+              "calendarId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "completedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "creatorId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "dueDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "version": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "calendar": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "calendarId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Calendar",
+                  "namespace": "public"
+                }
+              },
+              "creator": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "creatorId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AuthUser",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "calendarId": {
+                  "column": "calendarId"
+                },
+                "completedAt": {
+                  "column": "completedAt"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "creatorId": {
+                  "column": "creatorId"
+                },
+                "dueDate": {
+                  "column": "dueDate"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "version": {
+                  "column": "version"
+                }
+              },
+              "namespaceId": "public",
+              "table": "todo"
+            }
+          },
+          "TodoDigest": {
+            "fields": {
+              "attempts": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "day": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "retryAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "sentAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AuthUser",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "attempts": {
+                  "column": "attempts"
+                },
+                "day": {
+                  "column": "day"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "retryAt": {
+                  "column": "retryAt"
+                },
+                "sentAt": {
+                  "column": "sentAt"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "todoDigest"
             }
           },
           "WorkerHeartbeat": {
@@ -3456,6 +4026,11 @@
                   "prefix": "event_dates"
                 },
                 {
+                  "expression": "(\"linkedCalendarId\" IS NULL) = (\"sourceKey\" IS NULL)",
+                  "name": "event_source_b5d5c4ba",
+                  "prefix": "event_source"
+                },
+                {
                   "expression": "array_position(\"tags\", NULL) IS NULL",
                   "name": "event_tags_elem_not_null_aecbe9e2",
                   "prefix": "event_tags_elem_not_null"
@@ -3516,6 +4091,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "linkedCalendarId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "location": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -3524,6 +4104,11 @@
                     "value": ""
                   },
                   "nullable": false
+                },
+                "sourceKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "startDate": {
                   "codecId": "pg/text@1",
@@ -3621,6 +4206,26 @@
                     "namespaceId": "public",
                     "tableName": "user"
                   }
+                },
+                {
+                  "index": {
+                    "name": "event_linkedCalendarId_idx_d2d25352"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "linkedCalendarId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "event"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "linkedCalendar"
+                  }
                 }
               ],
               "indexes": [
@@ -3657,6 +4262,14 @@
                   "name": "event_creatorId_idx_3a77d800",
                   "prefix": "event_creatorId_idx",
                   "unique": false
+                },
+                {
+                  "columns": [
+                    "linkedCalendarId"
+                  ],
+                  "name": "event_linkedCalendarId_idx_d2d25352",
+                  "prefix": "event_linkedCalendarId_idx",
+                  "unique": false
                 }
               ],
               "primaryKey": {
@@ -3664,7 +4277,145 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "linkedCalendarId",
+                    "sourceKey"
+                  ]
+                }
+              ]
+            },
+            "eventReminderPreference": {
+              "checks": [
+                {
+                  "expression": "mode IN ('off', 'custom') AND \"reminderMinutes\" >= 0 AND \"reminderMinutes\" <= 525600 AND (mode = 'off' OR \"emailEnabled\" OR \"pushEnabled\")",
+                  "name": "event_reminder_preferences_03c72cbe",
+                  "prefix": "event_reminder_preferences"
+                }
+              ],
+              "columns": {
+                "emailEnabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "eventId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "mode": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "pushEnabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "reminderMinutes": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 30
+                  },
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "eventReminderPreference_eventId_idx_6a266d47"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "eventId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "eventReminderPreference"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "event"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "eventReminderPreference_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "eventReminderPreference"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "eventId"
+                  ],
+                  "name": "eventReminderPreference_eventId_idx_6a266d47",
+                  "prefix": "eventReminderPreference_eventId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "eventReminderPreference_userId_idx_a489d58a",
+                  "prefix": "eventReminderPreference_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "eventId",
+                    "userId"
+                  ]
+                }
+              ]
             },
             "feed": {
               "columns": {
@@ -3913,6 +4664,161 @@
                 {
                   "columns": [
                     "tokenHash"
+                  ]
+                }
+              ]
+            },
+            "linkedCalendar": {
+              "columns": {
+                "calendarId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "enabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "encryptedUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "lastError": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "lastSyncedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "nextSyncAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "syncToken": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "urlHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "linkedCalendar_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "linkedCalendar"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "linkedCalendar_calendarId_idx_51abb0b3"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "calendarId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "linkedCalendar"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "calendar"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "calendarId"
+                  ],
+                  "name": "linkedCalendar_calendarId_idx_51abb0b3",
+                  "prefix": "linkedCalendar_calendarId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "enabled",
+                    "nextSyncAt"
+                  ],
+                  "name": "linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c",
+                  "prefix": "linkedCalendar_enabled_nextSyncAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "linkedCalendar_userId_idx_a489d58a",
+                  "prefix": "linkedCalendar_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "calendarId",
+                    "urlHash"
                   ]
                 }
               ]
@@ -5098,6 +6004,15 @@
                   },
                   "nullable": false
                 },
+                "todoEmailEnabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
                 "userId": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5629,6 +6544,240 @@
                 }
               ]
             },
+            "todo": {
+              "columns": {
+                "calendarId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "completedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "creatorId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "dueDate": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "version": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "todo_calendarId_idx_51abb0b3"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "calendarId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "todo"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "calendar"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "todo_creatorId_idx_3a77d800"
+                  },
+                  "source": {
+                    "columns": [
+                      "creatorId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "todo"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "calendarId",
+                    "completedAt",
+                    "dueDate"
+                  ],
+                  "name": "todo_calendarId_completedAt_dueDate_idx_e3d07be4",
+                  "prefix": "todo_calendarId_completedAt_dueDate_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "calendarId"
+                  ],
+                  "name": "todo_calendarId_idx_51abb0b3",
+                  "prefix": "todo_calendarId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "creatorId"
+                  ],
+                  "name": "todo_creatorId_idx_3a77d800",
+                  "prefix": "todo_creatorId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "todoDigest": {
+              "checks": [
+                {
+                  "expression": "status IN ('pending', 'dispatching', 'sent', 'cancelled', 'failed', 'uncertain') AND attempts >= 1 AND attempts <= 4",
+                  "name": "todo_digest_state_da754800",
+                  "prefix": "todo_digest_state"
+                }
+              ],
+              "columns": {
+                "attempts": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                },
+                "day": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "retryAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "sentAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "todoDigest_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "todoDigest"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "todoDigest_userId_idx_a489d58a",
+                  "prefix": "todoDigest_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId",
+                    "day"
+                  ]
+                }
+              ]
+            },
             "user": {
               "columns": {
                 "createdAt": {
@@ -5779,7 +6928,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "9b15e7881d1012622b44a08ca420813db4cb3bae590f6a2d02226cd40131ccd4"
+    "storageHash": "37e5c8f0d65262c364067a164556bb44975a6a9cb3833bea79f593acb3d28de0"
   },
   "capabilities": {
     "postgres": {

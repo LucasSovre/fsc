@@ -1,19 +1,21 @@
 # FSC — Fucking Simple Calendar
 
 Un calendrier partagé pour deux, avec un choix **Commun / Solo** à chaque création.
-Interface française en HTML natif, sans CSS. Licence [WTFPL v2](LICENSE).
+Interface française en HTML natif et CSS, au format compact, avec la police Manrope hébergée localement. Licence [WTFPL v2](LICENSE).
 
 ## Fonctionnalités
 
 - Comptes individuels e-mail/mot de passe, vérification d’adresse et réinitialisation via Better Auth.
 - Un agenda solo privé par compte et un calendrier commun à deux, avec invitations nominatives de sept jours.
 - Accueil chronologique, navigation mensuelle, événements horaires ou sur plusieurs journées entières, tags multiples.
+- Onglet Todo : tâches Solo / Commun, échéance facultative, modification, fin/réouverture et suppression ; récapitulatif quotidien des retards par e-mail.
 - Modification partagée des événements communs ; seul le créateur peut changer leur visibilité.
-- Préférences de rappel personnelles : délai, e-mail, Web Push, tous les événements ou au moins un tag sélectionné.
+- Préférences de rappel personnelles : délai, e-mail, Web Push, tous les événements ou au moins un tag sélectionné. Un rappel personnalisé peut remplacer ces réglages pour un événement précis, pour soi uniquement.
 - Exports et abonnements ICS distincts, secrets et révocables, pour Commun et Solo.
+- Calendriers externes liés par URL ICS HTTPS/webcal : actualisation automatique, ajouts/modifications/suppressions et rappels personnels FSC.
 - Connecteur MCP OAuth pour Claude : lecture des agendas/événements et création avec visibilité obligatoire.
 
-Pas de récurrences, CalDAV, import ICS ou synchronisation bidirectionnelle dans cette V1.
+Pas de création de séries récurrentes natives, de CalDAV ni de synchronisation bidirectionnelle. Les calendriers ICS liés sont lus et actualisés dans FSC, avec développement de leurs récurrences courantes.
 
 ## Démarrage Docker
 
@@ -153,7 +155,7 @@ Better Auth utilise son adaptateur PostgreSQL officiel dans cette même base.
 - `scripts/auth-contract.ts` lit les schémas des versions installées de Better Auth,
   OAuth Provider et CIMD, puis assemble `src/prisma/contract.prisma`.
 - `contract.json` et `contract.d.ts` sont générés par Prisma. Ne pas les modifier à la main.
-- `migrations/` contient une seule nouvelle migration initiale, son snapshot et son ref `db`.
+- `migrations/` contient la migration initiale et les migrations additives, leurs snapshots et le ref `db`. La migration `event_reminder_preferences` ajoute les réglages personnels par événement sans modifier les événements existants.
 
 Après une évolution métier ou une mise à jour de Better Auth :
 
@@ -181,6 +183,26 @@ exclusive : pour le 10 mars uniquement, début le 10 et fin le 11.
 
 Le fuseau du navigateur est proposé au premier usage, avec repli `Europe/Paris`.
 Les préférences initiales sont 30 minutes, Tous les événements, canaux désactivés.
+
+Sur la création, la modification ou la fiche d’un événement, **Mon rappel** propose :
+
+- **Utiliser mes réglages habituels** : délai, canaux et filtre de tags personnels.
+- **Aucun rappel** : désactive uniquement les rappels de ce compte pour cet événement.
+- **Personnaliser ce rappel** : un délai en minutes, heures ou jours, et au moins un canal e-mail ou notification web. Ce choix remplace les réglages habituels, y compris le filtre de tags ; il reste indépendant des choix du partenaire.
+
+Le délai personnalisé est compris entre zéro et un an. Zéro vise l’heure de début ;
+pour une journée entière, la référence reste 9 h dans le fuseau du destinataire.
+Les notifications web exigent un appareil activé dans les réglages. Les changements
+de date replanifient les rappels en attente. Un rappel déjà envoyé ou dont le résultat
+est incertain n’est pas renvoyé. Si le délai est déjà passé mais que l’événement reste
+futur, le rappel peut partir au prochain passage du worker. La suppression d’un
+événement efface aussi ses préférences ; une perte d’accès retire les préférences
+personnelles correspondantes et annule les rappels en attente.
+
+Avant d’utiliser cette fonctionnalité sur une installation existante, appliquer les
+migrations (`bun run migrate` en local, ou la procédure Docker ci-dessus), puis
+redémarrer l’application et le worker.
+
 Pour une journée entière, le rappel vise 9 h le premier jour dans le fuseau du
 destinataire, moins son délai. En mode Tags sélectionnés, un seul tag correspondant
 suffit ; une sélection vide ne déclenche rien.
@@ -213,6 +235,95 @@ Les abonnements ICS appartiennent à un compte et à un seul agenda. Leurs secre
 sont stockés sous forme de hash, renouvelables et révocables. Les droits sont
 revérifiés à chaque lecture. Un téléphone ou destinataire peut cependant conserver
 une copie déjà téléchargée ; FSC ne contrôle pas sa fréquence d’actualisation.
+
+## Calendriers externes liés
+
+Depuis **Calendrier → Lier un autre calendrier**, ou le menu du logo, ouvrir
+**Calendriers liés**. Fournir un nom, le lien d’abonnement ICS HTTPS/webcal du
+calendrier source, puis choisir explicitement **Solo** ou **Commun**. L’adresse
+doit donner accès au flux ICS sans connexion interactive, et non à une page web.
+
+Le premier chargement a lieu à l’ajout, puis le worker vérifie les sources actives
+environ toutes les **15 minutes**. **Actualiser maintenant** force une vérification.
+Les événements, leurs titres, descriptions, lieux, horaires et catégories sont mis
+à jour ; les annulations et suppressions à la source retirent les copies FSC.
+Les identifiants FSC restent stables tant que l’UID et l’occurrence source restent
+identiques ; une actualisation sans changement ne modifie pas leur version.
+
+Les occurrences de l’**année passée et des deux années à venir** sont conservées.
+Les séries quotidiennes, hebdomadaires, mensuelles et annuelles courantes sont
+développées avec leurs exclusions et modifications d’occurrences. Les journées
+entières gardent leur fin exclusive ; les fuseaux IANA et les définitions
+VTIMEZONE sont pris en charge. Pour une date sans fuseau, celui du propriétaire
+du lien est utilisé ; un fuseau personnalisé est converti en UTC. Les événements
+sans titre deviennent « Sans titre ». Les sources doivent fournir des UID stables.
+
+Les séries `THISANDFUTURE`, les RDATE sous forme de périodes et les récurrences
+sous-journalières/complexes sont refusées. Le flux est limité à 2 Mo, 5 000 VEVENT,
+5 000 occurrences conservées et 50 000 itérations de récurrence. Un téléchargement
+ou une lecture invalide conserve intégralement la dernière copie réussie ; l’erreur
+est affichée dans la page du calendrier lié. Un calendrier ICS valide mais vide
+retire ses copies. La synchronisation applique chaque instantané dans une transaction.
+
+Les événements liés sont en lecture seule dans FSC : les modifier ou les supprimer
+dans le calendrier source. Les **rappels personnels** FSC restent configurables ;
+les VALARM, invitations et destinataires du flux ne sont pas importés. Les rappels
+en attente suivent les changements de date ; ceux déjà envoyés ne sont pas rejoués.
+
+Seul le propriétaire du lien peut l’actualiser, le mettre en pause, le reprendre
+ou le supprimer. L’autre membre voit les événements et l’état d’un lien Commun,
+mais pas son adresse. Une perte d’accès du propriétaire à l’agenda cible arrête
+la synchronisation au prochain passage, sans ajouter de nouvelles données. Il peut
+toujours supprimer sa connexion. La pause conserve les copies et leurs rappels ;
+la suppression confirmée du lien efface uniquement ses événements FSC et leurs
+rappels, sans toucher au calendrier distant ni aux événements créés manuellement.
+
+Les URL peuvent contenir des secrets. Elles sont stockées avec un chiffrement
+AES-256-GCM dérivé de `BETTER_AUTH_SECRET`, ne sont pas réaffichées et ne figurent
+pas dans les messages d’erreur. Conserver ce secret : sa rotation nécessite de
+recréer les liens. Le téléchargement accepte seulement HTTPS public sur le port
+443, normalise webcal vers HTTPS, contrôle chaque résolution DNS et chaque
+redirection, puis fixe les adresses validées à la connexion. Les adresses internes,
+locales et réservées sont refusées. Aucun cookie ou identifiant de compte distant
+n’est transmis. Les téléchargements sont limités en temps et en taille.
+
+La migration `linked_calendars` est additive. Appliquer `bun run migrate` avant de
+redémarrer l’application et le worker, ou suivre la procédure Docker habituelle.
+Les tests serveur utilisent des flux de test, sans appeler de calendrier privé réel.
+
+## Todo et récapitulatif quotidien
+
+L’onglet **Todo** permet d’ajouter des tâches **Solo** ou **Commun**, avec une
+échéance facultative. Les membres peuvent modifier, terminer, rouvrir et supprimer
+les tâches communes ; les tâches Solo restent privées. Une modification concurrente
+est refusée avec une invitation à recharger. La visibilité reste celle choisie lors
+de la création.
+
+Une échéance est une date, valable jusqu’à la fin de cette journée dans le fuseau de
+chaque utilisateur. Dès le lendemain, une tâche non terminée apparaît **En retard**.
+Les tâches sans échéance ne deviennent pas en retard.
+
+Le worker existant envoie à partir de **9 h locales**, au premier passage disponible,
+un e-mail contenant les tâches en retard auxquelles le compte a encore accès.
+Il n’envoie rien si la liste est vide, si le compte n’est pas vérifié ou si le
+récapitulatif est désactivé. Une indisponibilité du worker peut décaler l’envoi
+jusqu’à sa reprise dans la même journée ; les journées précédentes ne sont pas
+rattrapées. Les tâches terminées, supprimées ou devenues inaccessibles sont retirées
+avant l’envoi. Les rappels d’événements restent indépendants.
+
+L’envoi quotidien est activé par défaut et peut être désactivé personnellement dans
+**Todo → Récapitulatif quotidien par e-mail**. Il utilise le fuseau défini dans les
+réglages et nécessite le SMTP déjà configuré pour FSC.
+
+Le journal `todoDigest`, unique par compte et date locale, évite les doublons, même
+avec des passages concurrents. Un rejet temporaire explicite est réessayé jusqu’à
+quatre tentatives ; un timeout ou un envoi interrompu devient `uncertain` et n’est
+pas rejoué automatiquement ce jour-là. Les échecs de la veille ne bloquent pas
+le récapitulatif du lendemain.
+
+La migration `todos_daily_digest` ajoute les tables Todo et leur journal d’envoi,
+ainsi que la préférence personnelle. Appliquer `bun run migrate` avant de
+redémarrer l’application et le worker, ou suivre la procédure Docker habituelle.
 
 ## Claude et MCP
 

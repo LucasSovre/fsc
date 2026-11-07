@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'9b15e7881d1012622b44a08ca420813db4cb3bae590f6a2d02226cd40131ccd4'>;
+  StorageHashBase<'37e5c8f0d65262c364067a164556bb44975a6a9cb3833bea79f593acb3d28de0'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -527,7 +527,9 @@ export namespace Models {
     endDate: FieldOutputTypes['public']['Event']['endDate'];
     endsAt: FieldOutputTypes['public']['Event']['endsAt'];
     id: FieldOutputTypes['public']['Event']['id'];
+    linkedCalendarId: FieldOutputTypes['public']['Event']['linkedCalendarId'];
     location: FieldOutputTypes['public']['Event']['location'];
+    sourceKey: FieldOutputTypes['public']['Event']['sourceKey'];
     startDate: FieldOutputTypes['public']['Event']['startDate'];
     startsAt: FieldOutputTypes['public']['Event']['startsAt'];
     tags: FieldOutputTypes['public']['Event']['tags'];
@@ -537,7 +539,20 @@ export namespace Models {
     version: FieldOutputTypes['public']['Event']['version'];
     calendar: public_Calendar;
     creator: public_AuthUser;
-    readonly [RelationKeys]?: 'calendar' | 'creator';
+    linkedCalendar: public_LinkedCalendar | null;
+    readonly [RelationKeys]?: 'calendar' | 'creator' | 'linkedCalendar';
+  };
+  export type public_EventReminderPreference = {
+    emailEnabled: FieldOutputTypes['public']['EventReminderPreference']['emailEnabled'];
+    eventId: FieldOutputTypes['public']['EventReminderPreference']['eventId'];
+    id: FieldOutputTypes['public']['EventReminderPreference']['id'];
+    mode: FieldOutputTypes['public']['EventReminderPreference']['mode'];
+    pushEnabled: FieldOutputTypes['public']['EventReminderPreference']['pushEnabled'];
+    reminderMinutes: FieldOutputTypes['public']['EventReminderPreference']['reminderMinutes'];
+    userId: FieldOutputTypes['public']['EventReminderPreference']['userId'];
+    event: public_Event;
+    user: public_AuthUser;
+    readonly [RelationKeys]?: 'event' | 'user';
   };
   export type public_Feed = {
     calendarId: FieldOutputTypes['public']['Feed']['calendarId'];
@@ -563,6 +578,22 @@ export namespace Models {
     inviter: public_AuthUser;
     readonly [RelationKeys]?: 'calendar' | 'inviter';
   };
+  export type public_LinkedCalendar = {
+    calendarId: FieldOutputTypes['public']['LinkedCalendar']['calendarId'];
+    enabled: FieldOutputTypes['public']['LinkedCalendar']['enabled'];
+    encryptedUrl: FieldOutputTypes['public']['LinkedCalendar']['encryptedUrl'];
+    id: FieldOutputTypes['public']['LinkedCalendar']['id'];
+    lastError: FieldOutputTypes['public']['LinkedCalendar']['lastError'];
+    lastSyncedAt: FieldOutputTypes['public']['LinkedCalendar']['lastSyncedAt'];
+    name: FieldOutputTypes['public']['LinkedCalendar']['name'];
+    nextSyncAt: FieldOutputTypes['public']['LinkedCalendar']['nextSyncAt'];
+    syncToken: FieldOutputTypes['public']['LinkedCalendar']['syncToken'];
+    urlHash: FieldOutputTypes['public']['LinkedCalendar']['urlHash'];
+    userId: FieldOutputTypes['public']['LinkedCalendar']['userId'];
+    calendar: public_Calendar;
+    user: public_AuthUser;
+    readonly [RelationKeys]?: 'calendar' | 'user';
+  };
   export type public_Member = {
     calendarId: FieldOutputTypes['public']['Member']['calendarId'];
     userId: FieldOutputTypes['public']['Member']['userId'];
@@ -579,6 +610,7 @@ export namespace Models {
     reminderMode: FieldOutputTypes['public']['Profile']['reminderMode'];
     selectedTags: FieldOutputTypes['public']['Profile']['selectedTags'];
     timeZone: FieldOutputTypes['public']['Profile']['timeZone'];
+    todoEmailEnabled: FieldOutputTypes['public']['Profile']['todoEmailEnabled'];
     userId: FieldOutputTypes['public']['Profile']['userId'];
     calendar: public_Calendar;
     catalog: public_Catalog;
@@ -616,6 +648,30 @@ export namespace Models {
     catalog: public_Catalog;
     readonly [RelationKeys]?: 'catalog';
   };
+  export type public_Todo = {
+    calendarId: FieldOutputTypes['public']['Todo']['calendarId'];
+    completedAt: FieldOutputTypes['public']['Todo']['completedAt'];
+    createdAt: FieldOutputTypes['public']['Todo']['createdAt'];
+    creatorId: FieldOutputTypes['public']['Todo']['creatorId'];
+    dueDate: FieldOutputTypes['public']['Todo']['dueDate'];
+    id: FieldOutputTypes['public']['Todo']['id'];
+    title: FieldOutputTypes['public']['Todo']['title'];
+    version: FieldOutputTypes['public']['Todo']['version'];
+    calendar: public_Calendar;
+    creator: public_AuthUser;
+    readonly [RelationKeys]?: 'calendar' | 'creator';
+  };
+  export type public_TodoDigest = {
+    attempts: FieldOutputTypes['public']['TodoDigest']['attempts'];
+    day: FieldOutputTypes['public']['TodoDigest']['day'];
+    id: FieldOutputTypes['public']['TodoDigest']['id'];
+    retryAt: FieldOutputTypes['public']['TodoDigest']['retryAt'];
+    sentAt: FieldOutputTypes['public']['TodoDigest']['sentAt'];
+    status: FieldOutputTypes['public']['TodoDigest']['status'];
+    userId: FieldOutputTypes['public']['TodoDigest']['userId'];
+    user: public_AuthUser;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_WorkerHeartbeat = {
     id: FieldOutputTypes['public']['WorkerHeartbeat']['id'];
     updatedAt: FieldOutputTypes['public']['WorkerHeartbeat']['updatedAt'];
@@ -641,13 +697,17 @@ export declare const models: {
     Catalog: Models.public_Catalog;
     Delivery: Models.public_Delivery;
     Event: Models.public_Event;
+    EventReminderPreference: Models.public_EventReminderPreference;
     Feed: Models.public_Feed;
     Invitation: Models.public_Invitation;
+    LinkedCalendar: Models.public_LinkedCalendar;
     Member: Models.public_Member;
     Profile: Models.public_Profile;
     PushSubscription: Models.public_PushSubscription;
     Reminder: Models.public_Reminder;
     Tag: Models.public_Tag;
+    Todo: Models.public_Todo;
+    TodoDigest: Models.public_TodoDigest;
     WorkerHeartbeat: Models.public_WorkerHeartbeat;
   };
 };
@@ -975,6 +1035,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly linkedCalendarId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly location: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -983,6 +1049,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/text@1', ''>;
                   };
+                  readonly many: false;
+                };
+                readonly sourceKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly startDate: {
@@ -1040,7 +1112,7 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [];
+              uniques: readonly [{ readonly columns: readonly ['linkedCalendarId', 'sourceKey'] }];
               indexes: readonly [
                 {
                   readonly name: 'event_calendarId_idx_51abb0b3';
@@ -1066,6 +1138,12 @@ type ContractBase = Omit<
                   readonly columns: readonly ['creatorId'];
                   readonly unique: false;
                 },
+                {
+                  readonly name: 'event_linkedCalendarId_idx_d2d25352';
+                  readonly prefix: 'event_linkedCalendarId_idx';
+                  readonly columns: readonly ['linkedCalendarId'];
+                  readonly unique: false;
+                },
               ];
               foreignKeys: readonly [
                 {
@@ -1085,6 +1163,118 @@ type ContractBase = Omit<
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'event';
                     readonly columns: readonly ['creatorId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'event';
+                    readonly columns: readonly ['linkedCalendarId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'linkedCalendar';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly eventReminderPreference: {
+              columns: {
+                readonly emailEnabled: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly eventId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly mode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly pushEnabled: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly reminderMinutes: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 30>;
+                  };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['eventId', 'userId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'eventReminderPreference_eventId_idx_6a266d47';
+                  readonly prefix: 'eventReminderPreference_eventId_idx';
+                  readonly columns: readonly ['eventId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'eventReminderPreference_userId_idx_a489d58a';
+                  readonly prefix: 'eventReminderPreference_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'eventReminderPreference';
+                    readonly columns: readonly ['eventId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'event';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'eventReminderPreference';
+                    readonly columns: readonly ['userId'];
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
@@ -1275,6 +1465,131 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly linkedCalendar: {
+              columns: {
+                readonly calendarId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly enabled: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly encryptedUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lastError: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lastSyncedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly nextSyncAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly syncToken: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly urlHash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['calendarId', 'urlHash'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'linkedCalendar_calendarId_idx_51abb0b3';
+                  readonly prefix: 'linkedCalendar_calendarId_idx';
+                  readonly columns: readonly ['calendarId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'linkedCalendar_enabled_nextSyncAt_idx_c3a0d29c';
+                  readonly prefix: 'linkedCalendar_enabled_nextSyncAt_idx';
+                  readonly columns: readonly ['enabled', 'nextSyncAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'linkedCalendar_userId_idx_a489d58a';
+                  readonly prefix: 'linkedCalendar_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'linkedCalendar';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'linkedCalendar';
+                    readonly columns: readonly ['calendarId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'calendar';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -2317,6 +2632,16 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly todoEmailEnabled: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
                 readonly userId: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2713,6 +3038,189 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly todo: {
+              columns: {
+                readonly calendarId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly completedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly creatorId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly dueDate: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly version: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'todo_calendarId_completedAt_dueDate_idx_e3d07be4';
+                  readonly prefix: 'todo_calendarId_completedAt_dueDate_idx';
+                  readonly columns: readonly ['calendarId', 'completedAt', 'dueDate'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'todo_calendarId_idx_51abb0b3';
+                  readonly prefix: 'todo_calendarId_idx';
+                  readonly columns: readonly ['calendarId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'todo_creatorId_idx_3a77d800';
+                  readonly prefix: 'todo_creatorId_idx';
+                  readonly columns: readonly ['creatorId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'todo';
+                    readonly columns: readonly ['calendarId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'calendar';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'todo';
+                    readonly columns: readonly ['creatorId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly todoDigest: {
+              columns: {
+                readonly attempts: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+                readonly day: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly retryAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly sentAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId', 'day'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'todoDigest_userId_idx_a489d58a';
+                  readonly prefix: 'todoDigest_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'todoDigest';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly user: {
               columns: {
                 readonly createdAt: {
@@ -2856,10 +3364,18 @@ type ContractBase = Omit<
     readonly catalog: { readonly namespace: 'public' & NamespaceId; readonly model: 'Catalog' };
     readonly delivery: { readonly namespace: 'public' & NamespaceId; readonly model: 'Delivery' };
     readonly event: { readonly namespace: 'public' & NamespaceId; readonly model: 'Event' };
+    readonly eventReminderPreference: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'EventReminderPreference';
+    };
     readonly feed: { readonly namespace: 'public' & NamespaceId; readonly model: 'Feed' };
     readonly invitation: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Invitation';
+    };
+    readonly linkedCalendar: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LinkedCalendar';
     };
     readonly member: { readonly namespace: 'public' & NamespaceId; readonly model: 'Member' };
     readonly oauthAccessToken: {
@@ -2902,6 +3418,11 @@ type ContractBase = Omit<
     readonly reminder: { readonly namespace: 'public' & NamespaceId; readonly model: 'Reminder' };
     readonly session: { readonly namespace: 'public' & NamespaceId; readonly model: 'AuthSession' };
     readonly tag: { readonly namespace: 'public' & NamespaceId; readonly model: 'Tag' };
+    readonly todo: { readonly namespace: 'public' & NamespaceId; readonly model: 'Todo' };
+    readonly todoDigest: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'TodoDigest';
+    };
     readonly user: { readonly namespace: 'public' & NamespaceId; readonly model: 'AuthUser' };
     readonly verification: {
       readonly namespace: 'public' & NamespaceId;
@@ -4198,8 +4719,16 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly linkedCalendarId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly location: {
                 readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceKey: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly startDate: {
@@ -4265,6 +4794,18 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly linkedCalendar: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LinkedCalendar';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['linkedCalendarId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'event';
@@ -4278,7 +4819,9 @@ type ContractBase = Omit<
                 readonly endDate: { readonly column: 'endDate' };
                 readonly endsAt: { readonly column: 'endsAt' };
                 readonly id: { readonly column: 'id' };
+                readonly linkedCalendarId: { readonly column: 'linkedCalendarId' };
                 readonly location: { readonly column: 'location' };
+                readonly sourceKey: { readonly column: 'sourceKey' };
                 readonly startDate: { readonly column: 'startDate' };
                 readonly startsAt: { readonly column: 'startsAt' };
                 readonly tags: { readonly column: 'tags' };
@@ -4286,6 +4829,77 @@ type ContractBase = Omit<
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly version: { readonly column: 'version' };
+              };
+            };
+          };
+          readonly EventReminderPreference: {
+            readonly fields: {
+              readonly emailEnabled: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly eventId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly mode: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly pushEnabled: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly reminderMinutes: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly event: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Event';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['eventId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly user: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AuthUser';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'eventReminderPreference';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly emailEnabled: { readonly column: 'emailEnabled' };
+                readonly eventId: { readonly column: 'eventId' };
+                readonly id: { readonly column: 'id' };
+                readonly mode: { readonly column: 'mode' };
+                readonly pushEnabled: { readonly column: 'pushEnabled' };
+                readonly reminderMinutes: { readonly column: 'reminderMinutes' };
+                readonly userId: { readonly column: 'userId' };
               };
             };
           };
@@ -4451,6 +5065,105 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly LinkedCalendar: {
+            readonly fields: {
+              readonly calendarId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly enabled: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly encryptedUrl: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lastError: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lastSyncedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly nextSyncAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly syncToken: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly urlHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly calendar: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Calendar';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['calendarId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly user: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AuthUser';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'linkedCalendar';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly calendarId: { readonly column: 'calendarId' };
+                readonly enabled: { readonly column: 'enabled' };
+                readonly encryptedUrl: { readonly column: 'encryptedUrl' };
+                readonly id: { readonly column: 'id' };
+                readonly lastError: { readonly column: 'lastError' };
+                readonly lastSyncedAt: { readonly column: 'lastSyncedAt' };
+                readonly name: { readonly column: 'name' };
+                readonly nextSyncAt: { readonly column: 'nextSyncAt' };
+                readonly syncToken: { readonly column: 'syncToken' };
+                readonly urlHash: { readonly column: 'urlHash' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly Member: {
             readonly fields: {
               readonly calendarId: {
@@ -4532,6 +5245,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly todoEmailEnabled: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly userId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -4587,6 +5304,7 @@ type ContractBase = Omit<
                 readonly reminderMode: { readonly column: 'reminderMode' };
                 readonly selectedTags: { readonly column: 'selectedTags' };
                 readonly timeZone: { readonly column: 'timeZone' };
+                readonly todoEmailEnabled: { readonly column: 'todoEmailEnabled' };
                 readonly userId: { readonly column: 'userId' };
               };
             };
@@ -4778,6 +5496,157 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly key: { readonly column: 'key' };
                 readonly label: { readonly column: 'label' };
+              };
+            };
+          };
+          readonly Todo: {
+            readonly fields: {
+              readonly calendarId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly completedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly creatorId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly dueDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly version: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly calendar: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Calendar';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['calendarId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly creator: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AuthUser';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['creatorId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'todo';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly calendarId: { readonly column: 'calendarId' };
+                readonly completedAt: { readonly column: 'completedAt' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly creatorId: { readonly column: 'creatorId' };
+                readonly dueDate: { readonly column: 'dueDate' };
+                readonly id: { readonly column: 'id' };
+                readonly title: { readonly column: 'title' };
+                readonly version: { readonly column: 'version' };
+              };
+            };
+          };
+          readonly TodoDigest: {
+            readonly fields: {
+              readonly attempts: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly day: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly retryAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly sentAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AuthUser';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'todoDigest';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly attempts: { readonly column: 'attempts' };
+                readonly day: { readonly column: 'day' };
+                readonly id: { readonly column: 'id' };
+                readonly retryAt: { readonly column: 'retryAt' };
+                readonly sentAt: { readonly column: 'sentAt' };
+                readonly status: { readonly column: 'status' };
+                readonly userId: { readonly column: 'userId' };
               };
             };
           };

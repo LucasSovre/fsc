@@ -1,0 +1,566 @@
+[
+  {
+    "id": "table.todo",
+    "label": "Create table \"todo\"",
+    "summary": "Creates table \"todo\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "todo"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"todo\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"todo\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"todo\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"todo\"",
+        "sql": "CREATE TABLE \"public\".\"todo\" (\n  \"calendarId\" text NOT NULL,\n  \"completedAt\" timestamptz(3),\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"creatorId\" text NOT NULL,\n  \"dueDate\" text,\n  \"id\" text NOT NULL,\n  \"title\" text NOT NULL,\n  \"version\" int4 DEFAULT 1 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"todo\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"todo\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"todo\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.todoDigest",
+    "label": "Create table \"todoDigest\"",
+    "summary": "Creates table \"todoDigest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "todoDigest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"todoDigest\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"todoDigest\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"todoDigest\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"todoDigest\"",
+        "sql": "CREATE TABLE \"public\".\"todoDigest\" (\n  \"attempts\" int4 DEFAULT 1 NOT NULL,\n  \"day\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"retryAt\" timestamptz(3) NOT NULL,\n  \"sentAt\" timestamptz(3),\n  \"status\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"todo_digest_state_da754800\" CHECK (status IN ('pending', 'dispatching', 'sent', 'cancelled', 'failed', 'uncertain') AND attempts >= 1 AND attempts <= 4)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"todoDigest\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"todoDigest\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"todoDigest\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.profile.todoEmailEnabled",
+    "label": "Add column \"todoEmailEnabled\" to \"profile\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "todoEmailEnabled",
+        "table": "profile"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"todoEmailEnabled\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile",
+          "todoEmailEnabled"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"todoEmailEnabled\" on \"profile\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"todoEmailEnabled\"",
+        "sql": "ALTER TABLE \"public\".\"profile\" ADD COLUMN \"todoEmailEnabled\" bool DEFAULT true NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"todoEmailEnabled\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile",
+          "todoEmailEnabled"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"todoEmailEnabled\" on \"profile\""
+        }
+      },
+      {
+        "description": "verify column \"todoEmailEnabled\" has type \"boolean\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profile",
+          "todoEmailEnabled",
+          "boolean"
+        ]
+      },
+      {
+        "description": "verify column \"todoEmailEnabled\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profile",
+          "todoEmailEnabled",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.todoDigest.todoDigest_userId_day_key",
+    "label": "Add unique constraint on \"todoDigest\" (userId, day)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "todoDigest_userId_day_key",
+        "table": "todoDigest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"todoDigest_userId_day_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "todoDigest_userId_day_key",
+          "public",
+          "\"public\".\"todoDigest\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"todoDigest_userId_day_key\" on \"todoDigest\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"todoDigest_userId_day_key\"",
+        "sql": "ALTER TABLE \"public\".\"todoDigest\" ADD CONSTRAINT \"todoDigest_userId_day_key\" UNIQUE (\"userId\", \"day\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"todoDigest_userId_day_key\" exists on (userId, day)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "todoDigest_userId_day_key",
+          "public",
+          "\"public\".\"todoDigest\"",
+          "u",
+          "[\"userId\",\"day\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.todo.todo_calendarId_completedAt_dueDate_idx_e3d07be4",
+    "label": "Create index \"todo_calendarId_completedAt_dueDate_idx_e3d07be4\" on \"todo\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "todo_calendarId_completedAt_dueDate_idx_e3d07be4",
+        "table": "todo"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"todo_calendarId_completedAt_dueDate_idx_e3d07be4\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"todo_calendarId_completedAt_dueDate_idx_e3d07be4\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"todo_calendarId_completedAt_dueDate_idx_e3d07be4\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"todo_calendarId_completedAt_dueDate_idx_e3d07be4\"",
+        "sql": "CREATE INDEX \"todo_calendarId_completedAt_dueDate_idx_e3d07be4\" ON \"public\".\"todo\" (\"calendarId\", \"completedAt\", \"dueDate\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"todo_calendarId_completedAt_dueDate_idx_e3d07be4\" exists on \"todo\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"todo_calendarId_completedAt_dueDate_idx_e3d07be4\"",
+          "i",
+          "I",
+          "\"public\".\"todo\"",
+          "btree",
+          "[\"calendarId\",\"completedAt\",\"dueDate\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.todo.todo_calendarId_idx_51abb0b3",
+    "label": "Create index \"todo_calendarId_idx_51abb0b3\" on \"todo\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "todo_calendarId_idx_51abb0b3",
+        "table": "todo"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"todo_calendarId_idx_51abb0b3\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"todo_calendarId_idx_51abb0b3\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"todo_calendarId_idx_51abb0b3\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"todo_calendarId_idx_51abb0b3\"",
+        "sql": "CREATE INDEX \"todo_calendarId_idx_51abb0b3\" ON \"public\".\"todo\" (\"calendarId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"todo_calendarId_idx_51abb0b3\" exists on \"todo\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"todo_calendarId_idx_51abb0b3\"",
+          "i",
+          "I",
+          "\"public\".\"todo\"",
+          "btree",
+          "[\"calendarId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.todo.todo_creatorId_idx_3a77d800",
+    "label": "Create index \"todo_creatorId_idx_3a77d800\" on \"todo\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "todo_creatorId_idx_3a77d800",
+        "table": "todo"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"todo_creatorId_idx_3a77d800\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"todo_creatorId_idx_3a77d800\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"todo_creatorId_idx_3a77d800\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"todo_creatorId_idx_3a77d800\"",
+        "sql": "CREATE INDEX \"todo_creatorId_idx_3a77d800\" ON \"public\".\"todo\" (\"creatorId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"todo_creatorId_idx_3a77d800\" exists on \"todo\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"todo_creatorId_idx_3a77d800\"",
+          "i",
+          "I",
+          "\"public\".\"todo\"",
+          "btree",
+          "[\"creatorId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.todoDigest.todoDigest_userId_idx_a489d58a",
+    "label": "Create index \"todoDigest_userId_idx_a489d58a\" on \"todoDigest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "todoDigest_userId_idx_a489d58a",
+        "table": "todoDigest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"todoDigest_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"todoDigest_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"todoDigest_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"todoDigest_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"todoDigest_userId_idx_a489d58a\" ON \"public\".\"todoDigest\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"todoDigest_userId_idx_a489d58a\" exists on \"todoDigest\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"todoDigest_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"todoDigest\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.todo.todo_calendarId_fkey",
+    "label": "Add foreign key \"todo_calendarId_fkey\" on \"todo\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "todo_calendarId_fkey",
+        "table": "todo"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"todo_calendarId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "todo_calendarId_fkey",
+          "public",
+          "\"public\".\"todo\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"todo_calendarId_fkey\" on \"todo\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"todo_calendarId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"todo\"\nADD CONSTRAINT \"todo_calendarId_fkey\"\nFOREIGN KEY (\"calendarId\")\nREFERENCES \"public\".\"calendar\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"todo_calendarId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "todo_calendarId_fkey",
+          "public",
+          "\"public\".\"todo\"",
+          "f",
+          "[\"calendarId\"]",
+          "\"public\".\"calendar\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.todo.todo_creatorId_fkey",
+    "label": "Add foreign key \"todo_creatorId_fkey\" on \"todo\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "todo_creatorId_fkey",
+        "table": "todo"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"todo_creatorId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "todo_creatorId_fkey",
+          "public",
+          "\"public\".\"todo\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"todo_creatorId_fkey\" on \"todo\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"todo_creatorId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"todo\"\nADD CONSTRAINT \"todo_creatorId_fkey\"\nFOREIGN KEY (\"creatorId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"todo_creatorId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "todo_creatorId_fkey",
+          "public",
+          "\"public\".\"todo\"",
+          "f",
+          "[\"creatorId\"]",
+          "\"public\".\"user\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.todoDigest.todoDigest_userId_fkey",
+    "label": "Add foreign key \"todoDigest_userId_fkey\" on \"todoDigest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "todoDigest_userId_fkey",
+        "table": "todoDigest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"todoDigest_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "todoDigest_userId_fkey",
+          "public",
+          "\"public\".\"todoDigest\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"todoDigest_userId_fkey\" on \"todoDigest\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"todoDigest_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"todoDigest\"\nADD CONSTRAINT \"todoDigest_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"todoDigest_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "todoDigest_userId_fkey",
+          "public",
+          "\"public\".\"todoDigest\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"user\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  }
+]

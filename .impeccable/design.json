@@ -1,0 +1,368 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T09:23:15.411921+00:00",
+  "title": "Design System: FSC",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "displayName": "background",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "surface": {
+        "displayName": "surface",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "ink": {
+        "displayName": "ink",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "muted": {
+        "displayName": "muted",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "neutral": {
+        "displayName": "neutral",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "common": {
+        "displayName": "common",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(15% 0.018 130)",
+          "oklch(26% 0.039 130)",
+          "oklch(38% 0.054 130)",
+          "oklch(50% 0.06 130)",
+          "oklch(62% 0.06 130)",
+          "oklch(74% 0.051 130)",
+          "oklch(86% 0.033 130)",
+          "oklch(95% 0.012 130)"
+        ]
+      },
+      "solo": {
+        "displayName": "solo",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.018 295)",
+          "oklch(26% 0.039 295)",
+          "oklch(38% 0.054 295)",
+          "oklch(50% 0.06 295)",
+          "oklch(62% 0.06 295)",
+          "oklch(74% 0.051 295)",
+          "oklch(86% 0.033 295)",
+          "oklch(95% 0.012 295)"
+        ]
+      },
+      "border": {
+        "displayName": "border",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "error": {
+        "displayName": "error",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.018 25)",
+          "oklch(26% 0.039 25)",
+          "oklch(38% 0.054 25)",
+          "oklch(50% 0.06 25)",
+          "oklch(62% 0.06 25)",
+          "oklch(74% 0.051 25)",
+          "oklch(86% 0.033 25)",
+          "oklch(95% 0.012 25)"
+        ]
+      },
+      "focus": {
+        "displayName": "focus",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.018 295)",
+          "oklch(26% 0.039 295)",
+          "oklch(38% 0.054 295)",
+          "oklch(50% 0.06 295)",
+          "oklch(62% 0.06 295)",
+          "oklch(74% 0.051 295)",
+          "oklch(86% 0.033 295)",
+          "oklch(95% 0.012 295)"
+        ]
+      },
+      "field-border": {
+        "displayName": "field-border",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "button-hover": {
+        "displayName": "button-hover",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "button-active": {
+        "displayName": "button-active",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "nav-text": {
+        "displayName": "nav-text",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "nav-hover": {
+        "displayName": "nav-hover",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0009 100)",
+          "oklch(26% 0.002 100)",
+          "oklch(38% 0.0027 100)",
+          "oklch(50% 0.003 100)",
+          "oklch(62% 0.003 100)",
+          "oklch(74% 0.0026 100)",
+          "oklch(86% 0.0017 100)",
+          "oklch(95% 0.0006 100)"
+        ]
+      },
+      "error-background": {
+        "displayName": "error-background",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.018 25)",
+          "oklch(26% 0.039 25)",
+          "oklch(38% 0.054 25)",
+          "oklch(50% 0.06 25)",
+          "oklch(62% 0.06 25)",
+          "oklch(74% 0.051 25)",
+          "oklch(86% 0.033 25)",
+          "oklch(95% 0.012 25)"
+        ]
+      }
+    },
+    "shadows": [
+      {
+        "name": "today-ring",
+        "value": "inset 0 0 0 2px #62528e",
+        "purpose": "Contour intérieur du jour courant, sans élévation."
+      },
+      {
+        "name": "today-active-ring",
+        "value": "inset 0 0 0 2px var(--color-solo)",
+        "purpose": "Jour courant également actif."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-transition",
+        "value": "180ms ease-out",
+        "purpose": "Fonds et couleurs ; bordure des tuiles."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "Supprimer les transitions si prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-gutters",
+        "value": "359px",
+        "purpose": "max-width"
+      },
+      {
+        "name": "floating-shell",
+        "value": "520px",
+        "purpose": "min-width"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Action principale",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Bouton de formulaire.",
+      "html": "<button type=\"button\" class=\"ds-primary\">Créer l’événement</button>",
+      "css": ":host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} button, .ds-button-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; max-width: 100%; border: 1px solid transparent; border-radius: var(--radius-pill); padding: 12px 20px; background: var(--color-ink); color: white; font-size: 14px; font-weight: 600; line-height: 1.45; text-align: center; text-decoration: none; cursor: pointer; overflow-wrap: anywhere; transition: background-color 180ms ease-out; } button:hover:not(:disabled), .ds-button-link:hover { background: #42423e; } button:active:not(:disabled), .ds-button-link:active { background: #171716; } button:disabled { opacity: .55; cursor: not-allowed; }"
+    },
+    {
+      "name": "Action de compte",
+      "kind": "button",
+      "refersTo": "button-account",
+      "description": "Action de déconnexion dans le sous-menu ouvert par le logo.",
+      "html": "<div class=\"ds-account-actions\"><button type=\"button\">Déconnexion</button></div>",
+      "css": ":host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} button, .ds-button-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; max-width: 100%; border: 1px solid transparent; border-radius: var(--radius-pill); padding: 12px 20px; background: var(--color-ink); color: white; font-size: 14px; font-weight: 600; line-height: 1.45; text-align: center; text-decoration: none; cursor: pointer; overflow-wrap: anywhere; transition: background-color 180ms ease-out; } button:hover:not(:disabled), .ds-button-link:hover { background: #42423e; } button:active:not(:disabled), .ds-button-link:active { background: #171716; } button:disabled { opacity: .55; cursor: not-allowed; }:host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} .ds-account-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; } .ds-account-actions a, .ds-account-actions button { min-height: 44px; display: inline-flex; align-items: center; font-size: 12px; } .ds-account-actions button { background: transparent; border-color: var(--color-border); padding: 8px 14px; color: var(--color-ink); } .ds-account-actions button:hover:not(:disabled), .ds-account-actions button:active:not(:disabled) { background: var(--color-neutral); }"
+    },
+    {
+      "name": "Champ de saisie",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Champ avec libellé et focus clavier.",
+      "html": "<label class=\"ds-field-label\">Titre<input class=\"ds-field\" name=\"title\" placeholder=\"Un événement\" required></label>",
+      "css": ":host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} label { display: block; font-size: 14px; font-weight: 500; } input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"hidden\"]), textarea, select { display: block; width: 100%; min-width: 0; min-height: 48px; margin-top: 8px; padding: 12px 14px; border: 1px solid #92928c; border-radius: var(--radius-field); background: var(--color-surface); caret-color: #62528e; line-height: 1.5; } input::placeholder, textarea::placeholder { color: var(--color-muted); opacity: 1; } input:disabled, textarea:disabled, select:disabled { opacity: .6; cursor: not-allowed; }"
+    },
+    {
+      "name": "Navigation basse",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Barre montrée dans le flux pour la prévisualisation ; fixe en application.",
+      "html": "<nav class=\"ds-bottom-nav\" aria-label=\"Navigation principale\"><a href=\"/\" aria-current=\"page\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z\"/></svg><span>Accueil</span></a><a href=\"/calendrier\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"4\"/><path d=\"M7 3v4m10-4v4M3 11h18m-14 4h2m6 0h2m-10 3h2\"/></svg><span>Calendrier</span></a><a href=\"/todo\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"4\"/><path d=\"m7 8 1.5 1.5L11 7M14 8h3m-10 7 1.5 1.5L11 14m3 1h3\"/></svg><span>Todo</span></a><a href=\"/evenements/nouveau\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg><span>Créer</span></a><a href=\"/reglages\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polygon points=\"19.11,9.05 21.85,10.26 21.85,13.74 19.11,14.95 20.19,17.74 17.74,20.19 14.95,19.11 13.74,21.85 10.26,21.85 9.05,19.11 6.26,20.19 3.81,17.74 4.89,14.95 2.15,13.74 2.15,10.26 4.89,9.05 3.81,6.26 6.26,3.81 9.05,4.89 10.26,2.15 13.74,2.15 14.95,4.89 17.74,3.81 20.19,6.26\" /><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg><span>Réglages</span></a></nav>",
+      "css": ":host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} .ds-bottom-nav { position: fixed; z-index: 10; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 14px 12px calc(14px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; background: var(--color-ink); color: #e8e8e3; } .ds-bottom-nav a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 8px 4px; font-size: 11px; font-weight: 600; text-decoration: none; border-radius: 24px; transition: background-color 180ms ease-out, color 180ms ease-out; } .ds-bottom-nav a:hover { background: #41413e; } .ds-bottom-nav a[aria-current=\"page\"] { background: var(--color-surface); color: var(--color-ink); } .ds-bottom-nav a:focus-visible { outline-color: var(--color-common); outline-offset: 1px; } .ds-bottom-nav { bottom: 16px; width: 456px; border-radius: 28px; } .ds-bottom-nav { position:relative; left:auto; bottom:auto; transform:none; width:100%; max-width:480px; } .ds-bottom-nav a { min-width:0; height:62px; } .ds-bottom-nav svg { flex:0 0 22px; width:22px; height:22px; aspect-ratio:1; }"
+    },
+    {
+      "name": "Carte Commun",
+      "kind": "card",
+      "refersTo": "card-common",
+      "description": "Carte d’événement avec visibilité textuelle.",
+      "html": "<article class=\"ds-event-card\" data-visibility=\"common\"><a class=\"ds-event-title\" href=\"#event\"><span>Déjeuner</span><span class=\"ds-event-arrow\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 18 18 6M6 6h12v12\"/></svg></span></a><strong class=\"ds-event-visibility\">Commun</strong><div class=\"ds-event-time\">12/11/2026, 12:00 → 13:00</div></article>",
+      "css": ":host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} .ds-event-list { list-style: none; padding: 0; display: grid; gap: 12px; } .ds-event-card { margin: 0; padding: 20px; background: var(--color-common); border-radius: var(--radius-card); } .ds-event-card[data-visibility=\"solo\"] { background: var(--color-solo); } .ds-event-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; font-size: 20px; font-weight: 600; line-height: 1.35; text-decoration: none; letter-spacing: -.025em; } .ds-event-title:hover span:first-child { text-decoration: underline; text-underline-offset: 4px; } .ds-event-title > span:first-child { min-width: 0; overflow-wrap: anywhere; } .ds-event-arrow { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 50%; background: white; } .ds-event-visibility { display: inline-block; margin-top: 12px; font-size: 12px; font-weight: 700; } .ds-event-time { margin-top: 20px; font-size: 13px; font-variant-numeric: tabular-nums; } .ds-event-tags { border-top: 1px solid #27272540; padding-top: 12px; margin-top: 12px; font-size: 12px; } .ds-event-card { padding: 16px; }"
+    },
+    {
+      "name": "Carte Solo",
+      "kind": "card",
+      "refersTo": "card-solo",
+      "description": "Carte d’événement avec visibilité textuelle.",
+      "html": "<article class=\"ds-event-card\" data-visibility=\"solo\"><a class=\"ds-event-title\" href=\"#event\"><span>Déjeuner</span><span class=\"ds-event-arrow\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 18 18 6M6 6h12v12\"/></svg></span></a><strong class=\"ds-event-visibility\">Solo</strong><div class=\"ds-event-time\">12/11/2026, 12:00 → 13:00</div></article>",
+      "css": ":host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} .ds-event-list { list-style: none; padding: 0; display: grid; gap: 12px; } .ds-event-card { margin: 0; padding: 20px; background: var(--color-common); border-radius: var(--radius-card); } .ds-event-card[data-visibility=\"solo\"] { background: var(--color-solo); } .ds-event-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; font-size: 20px; font-weight: 600; line-height: 1.35; text-decoration: none; letter-spacing: -.025em; } .ds-event-title:hover span:first-child { text-decoration: underline; text-underline-offset: 4px; } .ds-event-title > span:first-child { min-width: 0; overflow-wrap: anywhere; } .ds-event-arrow { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 50%; background: white; } .ds-event-visibility { display: inline-block; margin-top: 12px; font-size: 12px; font-weight: 700; } .ds-event-time { margin-top: 20px; font-size: 13px; font-variant-numeric: tabular-nums; } .ds-event-tags { border-top: 1px solid #27272540; padding-top: 12px; margin-top: 12px; font-size: 12px; } .ds-event-card { padding: 16px; }"
+    },
+    {
+      "name": "Choix de visibilité",
+      "kind": "custom",
+      "refersTo": "visibility-option",
+      "description": "Radios sans sélection initiale ; couleur, contour et coche après sélection.",
+      "html": "<fieldset class=\"ds-visibility-field\"><legend>Qui peut voir cet événement ?</legend><div class=\"ds-visibility-options\"><label class=\"ds-visibility-option ds-visibility-solo\"><input type=\"radio\" name=\"ds-visibility\" value=\"solo\" required><span>Solo<span class=\"ds-sr-only\"> — visible uniquement par toi</span></span><svg class=\"ds-visibility-check\" viewBox=\"0 0 20 20\" width=\"20\" height=\"20\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"9\"/><path d=\"m6 10 3 3 5-6\"/></svg></label><label class=\"ds-visibility-option ds-visibility-common\"><input type=\"radio\" name=\"ds-visibility\" value=\"common\" required><span>Commun<span class=\"ds-sr-only\"> — visible et modifiable par vous deux</span></span><svg class=\"ds-visibility-check\" viewBox=\"0 0 20 20\" width=\"20\" height=\"20\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"9\"/><path d=\"m6 10 3 3 5-6\"/></svg></label></div></fieldset>",
+      "css": ":host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} fieldset { min-width: 0; margin: 22px 0; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-field); } legend { padding: 0 6px; font-size: 14px; font-weight: 700; } .ds-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; } .ds-visibility-field { padding: 0; border: 0; } .ds-visibility-field legend { padding: 0; margin-bottom: 14px; } .ds-visibility-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .ds-visibility-option:has(input[type=\"radio\"]) { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 72px; padding: 16px 12px; border: 2px solid transparent; border-radius: 20px; background: var(--color-neutral); font-size: 17px; font-weight: 650; cursor: pointer; transition: background-color 180ms ease-out, border-color 180ms ease-out; } .ds-visibility-option input[type=\"radio\"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; } .ds-visibility-option:has(input:checked) { border-color: var(--color-ink); } .ds-visibility-solo:has(input:checked), .ds-visibility-solo:hover:not(:has(input:disabled)) { background: var(--color-solo); } .ds-visibility-common:has(input:checked), .ds-visibility-common:hover:not(:has(input:disabled)) { background: var(--color-common); } .ds-visibility-option:has(input:focus-visible) { outline: 3px solid #62528e; outline-offset: 4px; } .ds-visibility-option:has(input:disabled) { cursor: not-allowed; color: var(--color-muted); background: var(--color-neutral); border-color: var(--color-border); } .ds-visibility-check { display: none; flex-shrink: 0; } .ds-visibility-check circle { fill: var(--color-ink); } .ds-visibility-check path { fill: none; stroke: white; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; } .ds-visibility-option:has(input:checked) .ds-visibility-check { display: block; } .ds-visibility-field > p { font-size: 13px; color: var(--color-muted); }"
+    },
+    {
+      "name": "Jours du calendrier",
+      "kind": "custom",
+      "refersTo": "calendar-day",
+      "description": "Jour normal, jour courant et date active.",
+      "html": "<table class=\"ds-calendar-grid\"><tbody><tr><td><a href=\"#day-11\">11</a></td><td><a href=\"#day-12\" data-today=\"true\">12</a></td><td><a href=\"#day-13\" aria-current=\"date\">13</a></td></tr></tbody></table>",
+      "css": ":host { font-family: var(--font-manrope, Manrope), sans-serif; color: var(--color-ink, #272725); font-size:16px; line-height:1.6; } :focus-visible {outline:3px solid #62528e; outline-offset:4px;} .ds-calendar-grid { width: 100%; table-layout: fixed; border-spacing: 4px 8px; font-variant-numeric: tabular-nums; } .ds-calendar-grid caption { text-align: left; margin-bottom: 18px; font-size: 20px; font-weight: 650; } .ds-calendar-grid th { font-size: 12px; font-weight: 500; padding-bottom: 6px; } .ds-calendar-grid td { padding: 0; text-align: center; } .ds-calendar-grid a { display: grid; place-items: center; width: 100%; max-width: 48px; aspect-ratio: 1; margin-inline: auto; border-radius: 50%; background: var(--color-neutral); text-decoration: none; font-size: 14px; } .ds-calendar-grid a:hover { background: var(--color-common); } .ds-calendar-grid a[data-today=\"true\"] { box-shadow: inset 0 0 0 2px #62528e; } .ds-calendar-grid a[aria-current=\"date\"] { background: var(--color-ink); color: white; } .ds-calendar-grid a[aria-current=\"date\"][data-today=\"true\"] { box-shadow: inset 0 0 0 2px var(--color-solo); } .ds-calendar-grid { border-spacing: 2px 8px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Un calendrier quotidien compact",
+    "overview": "Un calendrier quotidien compact, lisible, commun ou solo. Le blanc, les pastels et les formes arrondies reprennent la direction mobile approuvée, dans une colonne étroite sur tous les écrans.\n\nLa couleur porte la visibilité des événements. La typographie locale Manrope et la navigation basse anthracite donnent une continuité aux formulaires, au calendrier et aux réglages.",
+    "keyCharacteristics": [
+      "Colonne blanche compacte, même sur grand écran.",
+      "Vert pour Commun, lavande pour Solo, avec libellés explicites.",
+      "Cartes rondes, boutons en pilule et jours circulaires.",
+      "Contrôles natifs, focus visible et mouvement réduit respecté."
+    ],
+    "rules": [
+      {
+        "name": "The Visibility Rule",
+        "body": "Commun reste vert, Solo reste lavande ; le libellé accompagne toujours la couleur.",
+        "section": "colors"
+      },
+      {
+        "name": "The Compact Column Rule",
+        "body": "La largeur maximale de 480 px vaut pour toutes les pages et toutes les tailles d'écran.",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "Do conserver la même association de couleur entre cartes et choix de visibilité.",
+      "Do maintenir les libellés Solo / Commun et la coche de sélection.",
+      "Do conserver les radios natifs, leurs descriptions accessibles et le choix obligatoire sans valeur par défaut à la création.",
+      "Do garder la colonne compacte et réserver la place de la navigation fixe."
+    ],
+    "donts": [
+      "Don't élargir les pages sur ordinateur au-delà du format compact approuvé.",
+      "Don't remplacer les icônes SVG par des glyphes de police.",
+      "Don't masquer les états désactivés ni rendre Commun sélectionnable quand il est indisponible."
+    ]
+  }
+}

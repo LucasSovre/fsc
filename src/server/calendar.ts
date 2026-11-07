@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { rows, transaction, type Connection } from "./database";
-import type { Calendar, Event, Profile, Tag } from "./types";
-import { DomainError, dateValue, eventDates, eventSchema, localDate, preferencesSchema, tagKey, tagLabel, zoneSchema } from "./validation";
+import type { Calendar, Event, EventReminderChoice, Profile, Tag } from "./types";
+import { DomainError, dateValue, eventDates, eventReminderSchema, eventSchema, localDate, preferencesSchema, tagKey, tagLabel, zoneSchema } from "./validation";
 import { reconcileReminders } from "./reminder-plan";
 import { baseURL } from "./config";
 
@@ -80,11 +80,47 @@ export async function listEvents(userId: string, range: EventRange) {
     return { events: events.slice(0, limit), nextCursor: events.length > limit ? String(offset + limit) : null };
   });
 }
-export async function saveEvent(userId: string, raw: unknown, edit?: { id: string; version: number; confirmVisibility?: boolean }) {
+export async function getEventReminder(userId: string, eventId: string): Promise<EventReminderChoice> {
+  return transaction(async db => {
+    await account(db, userId);
+    await eventIn(db, userId, eventId);
+    const [preference] = await rows<EventReminderChoice>('SELECT mode,"reminderMinutes","emailEnabled","pushEnabled" FROM "eventReminderPreference" WHERE "eventId"=$1 AND "userId"=$2', [eventId, userId], db);
+    return preference ? eventReminderSchema.parse(preference) : { mode: "inherit" };
+  });
+}
+async function validateReminderChannels(db: Connection, userId: string, emailEnabled: boolean, pushEnabled: boolean) {
+  if (emailEnabled && !process.env.SMTP_HOST) throw new DomainError("Le service e-mail n’est pas configuré.");
+  if (pushEnabled && (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY)) throw new DomainError("Les notifications web ne sont pas configurées.");
+  if (pushEnabled && !(await rows('SELECT id FROM "pushSubscription" WHERE "userId"=$1', [userId], db)).length)
+    throw new DomainError("Active d’abord les notifications sur cet appareil depuis les réglages.");
+}
+async function storeEventReminder(db: Connection, userId: string, eventId: string, preference: EventReminderChoice) {
+  if (preference.mode === "inherit") {
+    await db.query('DELETE FROM "eventReminderPreference" WHERE "eventId"=$1 AND "userId"=$2', [eventId, userId]);
+    return;
+  }
+  if (preference.mode === "custom") await validateReminderChannels(db, userId, preference.emailEnabled, preference.pushEnabled);
+  const values = preference.mode === "custom" ? preference : { reminderMinutes: 30, emailEnabled: false, pushEnabled: false };
+  await db.query(`INSERT INTO "eventReminderPreference"(id,"eventId","userId",mode,"reminderMinutes","emailEnabled","pushEnabled") VALUES($1,$2,$3,$4,$5,$6,$7)
+    ON CONFLICT("eventId","userId") DO UPDATE SET mode=$4,"reminderMinutes"=$5,"emailEnabled"=$6,"pushEnabled"=$7`,
+  [randomUUID(), eventId, userId, preference.mode, values.reminderMinutes, values.emailEnabled, values.pushEnabled]);
+}
+export async function saveEventReminder(userId: string, eventId: string, raw: unknown) {
+  const preference = eventReminderSchema.parse(raw);
+  return transaction(async db => {
+    await account(db, userId);
+    await eventIn(db, userId, eventId);
+    await storeEventReminder(db, userId, eventId, preference);
+    await reconcileReminders(db, eventId, userId);
+  });
+}
+export async function saveEvent(userId: string, raw: unknown, edit?: { id: string; version: number; confirmVisibility?: boolean }, rawReminder?: unknown) {
   const input = eventSchema.parse(raw);
+  const reminder = rawReminder === undefined ? undefined : eventReminderSchema.parse(rawReminder);
   return transaction(async db => {
     const { profile } = await account(db, userId);
     const existing = edit ? await eventIn(db, userId, edit.id) : undefined;
+    if (existing?.linkedCalendarId) throw new DomainError("Modifie cet événement dans le calendrier source. Son rappel personnel reste modifiable dans FSC.");
     if (existing && existing.version !== edit!.version) throw new DomainError("Cet événement a changé. Recharge la page avant de modifier.", 409);
     const calendars = await calendarsIn(db, userId);
     let target = calendars.find(c => c.kind === input.visibility);
@@ -110,6 +146,7 @@ export async function saveEvent(userId: string, raw: unknown, edit?: { id: strin
       await db.query(`INSERT INTO event("calendarId",title,description,location,"allDay","startsAt","endsAt","startDate","endDate","timeZone",tags,id,"creatorId")
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, [...values, id, userId]);
     }
+    if (reminder) await storeEventReminder(db, userId, id, reminder);
     await reconcileReminders(db, id);
     return eventIn(db, userId, id);
   });
@@ -118,6 +155,7 @@ export async function deleteEvent(userId: string, eventId: string, version: numb
   return transaction(async db => {
     await account(db, userId);
     const event = await eventIn(db, userId, eventId);
+    if (event.linkedCalendarId) throw new DomainError("Supprime cet événement dans le calendrier source ou retire le calendrier lié.");
     if (event.version !== version) throw new DomainError("Cet événement a changé. Recharge la page.", 409);
     await db.query("DELETE FROM event WHERE id=$1", [eventId]);
   });
@@ -128,15 +166,12 @@ async function addTags(db: Connection, catalogId: string, labels: string[]) {
 }
 export async function savePreferences(userId: string, raw: unknown) {
   const input = preferencesSchema.parse(raw);
-  if (input.emailEnabled && !process.env.SMTP_HOST) throw new DomainError("Le service e-mail n’est pas configuré.");
-  if (input.pushEnabled && (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY)) throw new DomainError("Les notifications web ne sont pas configurées.");
   return transaction(async db => {
     const { profile } = await account(db, userId);
+    await validateReminderChannels(db, userId, input.emailEnabled, input.pushEnabled);
     const catalog = await rows<Tag>('SELECT key,label FROM tag WHERE "catalogId"=$1', [profile.catalogId], db);
     const selectedTags = [...new Set(input.selectedTags.map(tagKey))];
     if (selectedTags.some(key => !catalog.some(t => t.key === key))) throw new DomainError("Tag inconnu.");
-    if (input.pushEnabled && !(await rows('SELECT id FROM "pushSubscription" WHERE "userId"=$1', [userId], db)).length)
-      throw new DomainError("Active d’abord les notifications sur cet appareil.");
     await db.query(`UPDATE profile SET "timeZone"=$2,"reminderMinutes"=$3,"emailEnabled"=$4,"pushEnabled"=$5,"reminderMode"=$6,"selectedTags"=$7 WHERE "userId"=$1`,
       [userId, input.timeZone, input.reminderMinutes, input.emailEnabled, input.pushEnabled, input.reminderMode, selectedTags]);
     await reconcileReminders(db, undefined, userId);

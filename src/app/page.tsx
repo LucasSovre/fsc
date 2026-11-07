@@ -14,9 +14,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     const date = event.allDay ? event.startDate! : localDate(event.startsAt!, profile.timeZone);
     return date < today ? today : date;
   });
-  return <><h1>À venir</h1><p><Link href="/evenements/nouveau">Créer un événement</Link></p>
-    <p>Événements en cours et à venir sur les douze prochains mois, communs et solo. Fuseau : {profile.timeZone}.</p>
-    {!result.events.length && <p>Aucun événement à venir.</p>}
+  return <><h1>À venir</h1><p><Link className="button-link" href="/evenements/nouveau">Créer un événement</Link></p>
+    <p className="page-intro">Événements en cours et à venir sur les douze prochains mois, communs et solo. Fuseau : {profile.timeZone}.</p>
+    {!result.events.length && <p className="empty-state">Aucun événement à venir.</p>}
     {[...groups].map(([day, events]) => <section key={day}>
       <h2>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`))}</h2>
       <EventList events={events} zone={profile.timeZone} />

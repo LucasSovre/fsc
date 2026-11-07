@@ -1,0 +1,299 @@
+[
+  {
+    "id": "table.eventReminderPreference",
+    "label": "Create table \"eventReminderPreference\"",
+    "summary": "Creates table \"eventReminderPreference\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "eventReminderPreference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"eventReminderPreference\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"eventReminderPreference\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"eventReminderPreference\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"eventReminderPreference\"",
+        "sql": "CREATE TABLE \"public\".\"eventReminderPreference\" (\n  \"emailEnabled\" bool DEFAULT false NOT NULL,\n  \"eventId\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"mode\" text NOT NULL,\n  \"pushEnabled\" bool DEFAULT false NOT NULL,\n  \"reminderMinutes\" int4 DEFAULT 30 NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"event_reminder_preferences_03c72cbe\" CHECK (mode IN ('off', 'custom') AND \"reminderMinutes\" >= 0 AND \"reminderMinutes\" <= 525600 AND (mode = 'off' OR \"emailEnabled\" OR \"pushEnabled\"))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"eventReminderPreference\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"eventReminderPreference\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"eventReminderPreference\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.eventReminderPreference.eventReminderPreference_eventId_userId_key",
+    "label": "Add unique constraint on \"eventReminderPreference\" (eventId, userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "eventReminderPreference_eventId_userId_key",
+        "table": "eventReminderPreference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"eventReminderPreference_eventId_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "eventReminderPreference_eventId_userId_key",
+          "public",
+          "\"public\".\"eventReminderPreference\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"eventReminderPreference_eventId_userId_key\" on \"eventReminderPreference\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"eventReminderPreference_eventId_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"eventReminderPreference\" ADD CONSTRAINT \"eventReminderPreference_eventId_userId_key\" UNIQUE (\"eventId\", \"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"eventReminderPreference_eventId_userId_key\" exists on (eventId, userId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "eventReminderPreference_eventId_userId_key",
+          "public",
+          "\"public\".\"eventReminderPreference\"",
+          "u",
+          "[\"eventId\",\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.eventReminderPreference.eventReminderPreference_eventId_idx_6a266d47",
+    "label": "Create index \"eventReminderPreference_eventId_idx_6a266d47\" on \"eventReminderPreference\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "eventReminderPreference_eventId_idx_6a266d47",
+        "table": "eventReminderPreference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"eventReminderPreference_eventId_idx_6a266d47\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"eventReminderPreference_eventId_idx_6a266d47\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"eventReminderPreference_eventId_idx_6a266d47\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"eventReminderPreference_eventId_idx_6a266d47\"",
+        "sql": "CREATE INDEX \"eventReminderPreference_eventId_idx_6a266d47\" ON \"public\".\"eventReminderPreference\" (\"eventId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"eventReminderPreference_eventId_idx_6a266d47\" exists on \"eventReminderPreference\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"eventReminderPreference_eventId_idx_6a266d47\"",
+          "i",
+          "I",
+          "\"public\".\"eventReminderPreference\"",
+          "btree",
+          "[\"eventId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.eventReminderPreference.eventReminderPreference_userId_idx_a489d58a",
+    "label": "Create index \"eventReminderPreference_userId_idx_a489d58a\" on \"eventReminderPreference\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "eventReminderPreference_userId_idx_a489d58a",
+        "table": "eventReminderPreference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"eventReminderPreference_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"eventReminderPreference_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"eventReminderPreference_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"eventReminderPreference_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"eventReminderPreference_userId_idx_a489d58a\" ON \"public\".\"eventReminderPreference\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"eventReminderPreference_userId_idx_a489d58a\" exists on \"eventReminderPreference\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"eventReminderPreference_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"eventReminderPreference\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.eventReminderPreference.eventReminderPreference_eventId_fkey",
+    "label": "Add foreign key \"eventReminderPreference_eventId_fkey\" on \"eventReminderPreference\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "eventReminderPreference_eventId_fkey",
+        "table": "eventReminderPreference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"eventReminderPreference_eventId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "eventReminderPreference_eventId_fkey",
+          "public",
+          "\"public\".\"eventReminderPreference\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"eventReminderPreference_eventId_fkey\" on \"eventReminderPreference\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"eventReminderPreference_eventId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"eventReminderPreference\"\nADD CONSTRAINT \"eventReminderPreference_eventId_fkey\"\nFOREIGN KEY (\"eventId\")\nREFERENCES \"public\".\"event\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"eventReminderPreference_eventId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "eventReminderPreference_eventId_fkey",
+          "public",
+          "\"public\".\"eventReminderPreference\"",
+          "f",
+          "[\"eventId\"]",
+          "\"public\".\"event\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.eventReminderPreference.eventReminderPreference_userId_fkey",
+    "label": "Add foreign key \"eventReminderPreference_userId_fkey\" on \"eventReminderPreference\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "eventReminderPreference_userId_fkey",
+        "table": "eventReminderPreference"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"eventReminderPreference_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "eventReminderPreference_userId_fkey",
+          "public",
+          "\"public\".\"eventReminderPreference\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"eventReminderPreference_userId_fkey\" on \"eventReminderPreference\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"eventReminderPreference_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"eventReminderPreference\"\nADD CONSTRAINT \"eventReminderPreference_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"eventReminderPreference_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "eventReminderPreference_userId_fkey",
+          "public",
+          "\"public\".\"eventReminderPreference\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"user\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  }
+]

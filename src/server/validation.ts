@@ -29,6 +29,21 @@ export const preferencesSchema = z.object({
   selectedTags: z.array(z.string().trim().min(1).max(60)).max(200),
   emailEnabled: z.boolean(), pushEnabled: z.boolean(),
 });
+export const eventReminderSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("inherit") }),
+  z.object({ mode: z.literal("off") }),
+  z.object({
+    mode: z.literal("custom"),
+    reminderMinutes: z.number().int("Le délai doit être un nombre entier de minutes.").min(0).max(525600, "Le délai maximal est d’un an."),
+    emailEnabled: z.boolean(),
+    pushEnabled: z.boolean(),
+  }).refine(value => value.emailEnabled || value.pushEnabled, "Choisis au moins un canal pour ton rappel personnalisé."),
+]);
+export const todoSchema = z.object({
+  title: z.string().trim().min(1, "Le titre de la tâche est obligatoire.").max(300),
+  visibility: z.enum(["solo", "common"], { error: "Choisis Commun ou Solo." }),
+  dueDate: z.string().max(10).nullable().transform(value => value ? dateValue(value) : null),
+});
 export const tagKey = (value: string) => value.normalize("NFC").trim().replace(/\s+/g, " ").toLocaleLowerCase("fr");
 export const tagLabel = (value: string) => value.normalize("NFC").trim().replace(/\s+/g, " ");
 export function dateValue(value: string) {
