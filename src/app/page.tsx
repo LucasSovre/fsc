@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireUser } from "../server/session";
 import { listEvents, settings } from "../server/calendar";
+import { Notice } from "./components/notice";
 import { EventList } from "./components/event-list";
 import { localDate } from "../server/validation";
-export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string; ok?: string }> }) {
   const user = await requireUser();
   const { profile } = await settings(user.id);
-  const { page } = await searchParams;
+  const { page, ok } = await searchParams;
   const now = new Date();
   const result = await listEvents(user.id, { from: now, to: new Date(now.getTime() + 365 * 86400_000), cursor: page });
   const today = localDate(now, profile.timeZone);
@@ -14,7 +15,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     const date = event.allDay ? event.startDate! : localDate(event.startsAt!, profile.timeZone);
     return date < today ? today : date;
   });
-  return <><h1>À venir</h1>
+  return <><h1>À venir</h1><Notice code={ok} />
     <p className="page-intro">Événements en cours et à venir sur les douze prochains mois, communs et solo. Fuseau : {profile.timeZone}.</p>
     {!result.events.length && <p className="empty-state">Aucun événement à venir.</p>}
     {[...groups].map(([day, events]) => <section key={day}>

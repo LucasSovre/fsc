@@ -118,7 +118,13 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 .month-nav a { display: flex; align-items: center; justify-content: center; min-width: 28px; min-height: 36px; padding: 6px; border-radius: var(--radius-pill); background: transparent; font-size: 11px; text-align: center; text-decoration: none; }
 .month-nav a:nth-child(2) { background: var(--color-neutral); padding-inline: 10px; }
 .month-nav a:hover { background: #e4e4e1; }
-.month-swipe { touch-action: pan-y pinch-zoom; }
+.month-swipe { touch-action: pan-y pinch-zoom; transition: opacity 120ms ease-out; }
+.month-swipe[aria-busy="true"] { opacity: .6; }
+.notice { margin-top: 0; }
+.skeleton { display: grid; gap: 12px; margin-top: 24px; }
+.skeleton i { display: block; height: 72px; border-radius: var(--radius-card); background: var(--color-neutral); animation: skeleton-pulse 1.2s ease-in-out infinite; }
+@keyframes skeleton-pulse { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .skeleton i { animation: none; } }
 .calendar-grid { width: 100%; table-layout: fixed; border-spacing: 4px 8px; font-variant-numeric: tabular-nums; }
 .calendar-grid caption { text-align: left; margin-bottom: 18px; font-size: 20px; font-weight: 650; }
 .calendar-grid th { font-size: 12px; font-weight: 500; padding-bottom: 6px; }

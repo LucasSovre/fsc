@@ -5,13 +5,14 @@ import { getEvent, getEventReminder, settings } from "../../../server/calendar";
 import { DomainError } from "../../../server/validation";
 import { ActionForm } from "../../components/action-form";
 import { deleteEventAction, eventReminderAction } from "../../actions";
+import { Notice } from "../../components/notice";
 import { EventList } from "../../components/event-list";
 import { EventReminderFields } from "../../components/event-reminder-fields";
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser(), { id } = await params;
+export default async function Page({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string }> }) {
+  const user = await requireUser(), { id } = await params, { ok } = await searchParams;
   const event = await getEvent(user.id, id).catch(error => { if (error instanceof DomainError && error.status === 404) notFound(); throw error; });
   const reminder = await getEventReminder(user.id, id), { profile } = await settings(user.id);
-  return <><h1>{event.title}</h1><EventList events={[event]} zone={event.timeZone} />
+  return <><h1>{event.title}</h1><Notice code={ok} /><EventList events={[event]} zone={event.timeZone} />
     <p>{event.linkedCalendarId ? "Cet événement est mis à jour depuis un calendrier lié. Pour le modifier ou le supprimer, utilise le calendrier source. Ton rappel personnel reste modifiable ci-dessous." : event.visibility === "common" ? "Vous pouvez tous les deux modifier et supprimer cet événement." : "Cet événement est privé. Toi seul peux le consulter et le modifier."}</p>
     {event.location && <p>Lieu : {event.location}</p>}{event.description.split("\n").map((line, i) => <p key={i}>{line}</p>)}
     <p><Link href={event.linkedCalendarId ? "/calendriers-lies" : `/evenements/${event.id}/modifier`}>{event.linkedCalendarId ? "Voir les calendriers liés" : "Modifier"}</Link></p>

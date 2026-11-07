@@ -30,8 +30,8 @@ test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et 
   await menuTrigger.click();
   await page.getByRole("heading", { name: "À venir" }).click();
   await expect(accountMenu).not.toBeVisible();
-  await menuTrigger.click();
-  await accountMenu.getByRole("link", { name: "Connecter Claude" }).click();
+  await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Réglages" }).click();
+  await page.getByRole("link", { name: "Connecter Claude" }).click();
   await expect(page.getByRole("heading", { name: "Connecter Claude" })).toBeVisible();
   await expect(accountMenu).not.toBeVisible();
   const nav = page.getByRole("navigation", { name: "Navigation principale" });
