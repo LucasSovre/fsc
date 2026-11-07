@@ -262,3 +262,17 @@ model SmtpSetting {
   @@check(expression: sql`port >= 1 AND port <= 65535`, name: "smtp_port")
   @@map("smtpSetting")
 }
+
+model ApiKey {
+  id String @id
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name String
+  prefix String
+  keyHash String @unique
+  scopes String[]
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+  @@index([userId])
+  @@map("apiKey")
+}

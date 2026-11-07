@@ -19,8 +19,11 @@ const instructions = [
   "Demande toujours l’accord explicite de l’utilisateur avant une action destructive ou sensible (suppressions, quitter le Commun, invitations, liens d’abonnement, révocation de connexion, SMTP) puis passe confirm à true quand l’outil l’exige.",
   "Les adresses secrètes (liens d’invitation ou d’abonnement) ne doivent être montrées qu’à l’utilisateur.",
 ].join(" ");
-function unauthorized() {
+export function unauthorized() {
   return new Response("Authentification OAuth requise.", { status: 401, headers: { "WWW-Authenticate": `Bearer resource_metadata="${metadataURL}", scope="${scopes.filter(s => s !== "offline_access").join(" ")}"`, "Cache-Control": "no-store" } });
+}
+export function registerTools(context: ToolContext) {
+  for (const register of [registerEventTools, registerTodoTools, registerSettingsTools, registerLinkedTools, registerAdminTools]) register(context);
 }
 export async function handleMCP(request: Request) {
   productionReady();
@@ -59,7 +62,7 @@ export async function handleMCP(request: Request) {
     } catch (error) { return { isError: true, content: [{ type: "text" as const, text: errorMessage(error) }] }; }
   };
   const context: ToolContext = { server, userId: principal.userId, invoke };
-  for (const register of [registerEventTools, registerTodoTools, registerSettingsTools, registerLinkedTools, registerAdminTools]) register(context);
+  registerTools(context);
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
   try {
