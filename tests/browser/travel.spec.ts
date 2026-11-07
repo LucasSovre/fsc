@@ -1,11 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { register, password, assertTestDatabase } from "../helpers";
-import { pool } from "../../src/server/database";
 import { acceptInvitation, createInvitation, listCalendars, rotateFeed, saveEvent } from "../../src/server/calendar";
 import { setTravelDays } from "../../src/server/travel";
 
 test.beforeAll(() => { assertTestDatabase(); });
-test.afterAll(async () => { await pool.end(); });
 
 test("déplacements sur mobile : saisie, couleur, clavier, persistance et ICS", async ({ page }, testInfo) => {
   const a = await register("Alice"), b = await register("Bob");

@@ -1,12 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { register, password, assertTestDatabase, authRequest } from "../helpers";
-import { pool } from "../../src/server/database";
 import { acceptInvitation, createInvitation } from "../../src/server/calendar";
 import { auth } from "../../src/server/auth";
 import { mcpResource } from "../../src/server/config";
 test.beforeAll(() => { assertTestDatabase(); });
-test.afterAll(async () => { await pool.end(); });
 
 test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et flux", async ({ browser, page, baseURL }, testInfo) => {
   test.setTimeout(120000);
@@ -28,7 +26,7 @@ test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et 
   await page.keyboard.press("Escape");
   await expect(accountMenu).not.toBeVisible();
   await menuTrigger.click();
-  await page.getByRole("heading", { name: "À venir" }).click();
+  await page.mouse.click(195, 600);
   await expect(accountMenu).not.toBeVisible();
   await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Réglages" }).click();
   await page.getByRole("link", { name: "Connecter Claude" }).click();
@@ -193,7 +191,8 @@ test("présentation : accès clavier, sélection solo, textes longs et zoom", as
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const submit = page.getByRole("button", { name: "Créer l’événement", exact: true });
   await submit.focus();
-  const control = await submit.boundingBox(), navigation = await page.locator(".bottom-nav").boundingBox();
-  expect(control!.y + control!.height).toBeLessThanOrEqual(navigation!.y);
+  await expect(page.locator(".bottom-nav")).toHaveCount(0);
+  const control = await submit.boundingBox();
+  expect(control!.y + control!.height).toBeLessThanOrEqual(900);
   await page.screenshot({ path: testInfo.outputPath("form-zoom-200.png") });
 });
