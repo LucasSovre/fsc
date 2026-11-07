@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { isAdmin, requireUser } from "../../server/session";
 import { getSmtpSummary } from "../../server/smtp";
 import { settings } from "../../server/calendar";
@@ -28,6 +29,9 @@ export default async function Page() {
       </fieldset><button>Enregistrer mes réglages</button>
     </ActionForm>
     <PushSettings publicKey={process.env.VAPID_PUBLIC_KEY || ""} />
+    <section><h2>Connexions</h2>
+      <ul><li><Link href="/calendriers-lies">Calendriers liés</Link></li><li><Link href="/claude">Connecter Claude</Link></li></ul>
+    </section>
     <section><h2>Calendrier commun</h2>
       {state.members.length ? <ul>{state.members.map(m => <li key={m.email}>{m.name} · {m.email}</li>)}</ul> : <p>Tu n’as pas encore de calendrier commun.</p>}
       {state.members.length < 2 && <ActionForm action={inviteAction}><p><label>E-mail de la personne à inviter <input name="email" type="email" required /></label></p><button>Inviter à partager mon calendrier</button></ActionForm>}

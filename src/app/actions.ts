@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { Temporal } from "temporal-polyfill";
 import { assertAdmin, requireUser } from "../server/session";
 import { rows } from "../server/database";
 import { saveSmtpConfig } from "../server/smtp";
@@ -38,17 +39,26 @@ function eventReminderInput(form: FormData) {
   const value = text(form, "eventReminderValue").trim();
   return { mode, reminderMinutes: value ? Number(value) * unit : NaN, emailEnabled: checked(form, "eventReminderEmail"), pushEnabled: checked(form, "eventReminderPush") };
 }
+function exclusiveEnd(start: string, last: string) {
+  try {
+    if (Temporal.PlainDate.compare(last, start) < 0) throw new DomainError("Le dernier jour doit être le même jour que le premier, ou après.");
+    return Temporal.PlainDate.from(last).add({ days: 1 }).toString();
+  } catch (error) {
+    if (error instanceof DomainError) throw error;
+    return last;
+  }
+}
 export async function eventAction(_: ActionState, form: FormData) {
   return run(async userId => {
     const allDay = checked(form, "allDay");
     const event = await saveEvent(userId, {
       visibility: text(form, "visibility"), title: text(form, "title"), description: text(form, "description"), location: text(form, "location"),
       tags: [...form.getAll("tags").map(String), ...text(form, "newTags").split(",").map(s => s.trim()).filter(Boolean)],
-      temporalData: allDay ? { allDay: true, startDate: text(form, "startDate"), endDate: text(form, "endDate") }
+      temporalData: allDay ? { allDay: true, startDate: text(form, "startDate"), endDate: exclusiveEnd(text(form, "startDate"), text(form, "endDate")) }
         : { allDay: false, start: text(form, "startOffset").trim() || text(form, "start"), end: text(form, "endOffset").trim() || text(form, "end"), timeZone: text(form, "timeZone") },
     }, form.get("id") ? { id: text(form, "id"), version: Number(text(form, "version")), confirmVisibility: checked(form, "confirmVisibility") } : undefined,
     form.has("eventReminderMode") ? eventReminderInput(form) : undefined);
-    return { redirectTo: `/evenements/${event.id}` };
+    return { redirectTo: `/evenements/${event.id}?ok=enregistre` };
   });
 }
 export async function eventReminderAction(_: ActionState, form: FormData) {
@@ -61,7 +71,7 @@ export async function deleteEventAction(_: ActionState, form: FormData) {
   return run(async userId => {
     if (!checked(form, "confirm")) throw new DomainError("Confirme la suppression.");
     await deleteEvent(userId, text(form, "id"), Number(text(form, "version")));
-    return { redirectTo: "/" };
+    return { redirectTo: "/?ok=supprime" };
   });
 }
 export async function preferencesAction(_: ActionState, form: FormData) {

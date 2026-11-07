@@ -20,8 +20,9 @@ test("déplacements sur mobile : saisie, couleur, clavier, persistance et ICS", 
   await expect(page.getByRole("heading", { name: "À venir" })).toBeVisible();
   await page.goto("/calendrier?jour=2027-03-31");
   const toggle = page.getByRole("switch", { name: "Afficher les déplacements" });
+  const openMenu = async () => { if (!(await toggle.isVisible())) await page.getByText("Déplacements", { exact: true }).click(); };
+  await openMenu();
   await expect(toggle).not.toBeChecked();
-  await page.getByText("Marquer un déplacement", { exact: true }).click();
   await expect(page.getByLabel("Du", { exact: true })).toHaveValue("2027-03-31");
   await page.getByLabel("Au (inclus)").fill("2027-04-02");
   await page.getByRole("button", { name: "Marquer mes jours" }).click();
@@ -35,7 +36,6 @@ test("déplacements sur mobile : saisie, couleur, clavier, persistance et ICS", 
   await expect(page.getByText("Alice en déplacement", { exact: true })).toBeVisible();
   await expect(page.getByText("Bob en déplacement", { exact: true })).toBeVisible();
   await expect(page.getByText("Dîner ensemble", { exact: true })).toBeVisible();
-  await page.getByText("Marquer un déplacement", { exact: true }).click();
   await page.getByText("Alice en déplacement", { exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("travel-mobile.png") });
   await page.setViewportSize({ width: 1280, height: 1000 });
@@ -45,12 +45,13 @@ test("déplacements sur mobile : saisie, couleur, clavier, persistance et ICS", 
   await expect(toggle).toBeChecked();
   await expect(page.locator('.calendar-grid a[data-travel="true"]')).toHaveCount(2);
   await page.reload();
+  await openMenu();
   await expect(toggle).toBeChecked();
   await toggle.uncheck();
   await expect(page.locator('.calendar-grid a[aria-current="date"]')).not.toHaveCSS("background-color", "rgb(244, 212, 184)");
   await page.reload();
+  await openMenu();
   await expect(toggle).not.toBeChecked();
-  await page.getByText("Marquer un déplacement", { exact: true }).click();
   await page.getByLabel("Au (inclus)").fill("2027-04-02");
   await page.getByRole("button", { name: "Retirer mon marquage" }).click();
   await expect(page.getByText("Ton marquage a été retiré pour cette période.")).toBeVisible();
@@ -74,6 +75,7 @@ test("déplacements sur mobile : saisie, couleur, clavier, persistance et ICS", 
   await page.getByRole("button", { name: "Se connecter", exact: true }).click();
   await expect(page.getByRole("heading", { name: "À venir" })).toBeVisible();
   await page.goto("/calendrier?jour=2027-03-31");
+  await openMenu();
   await expect(toggle).not.toBeChecked();
   await toggle.check();
   await expect(page.getByText("Alice en déplacement", { exact: true })).toBeVisible();

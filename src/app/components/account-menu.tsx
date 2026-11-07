@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Logout } from "./logout";
@@ -17,7 +16,7 @@ export function AccountMenu({ name, email }: { name: string; email: string }) {
     </button>
     <div ref={menu} id="menu-compte" className="account-menu" popover="auto" aria-label="Compte">
       <div className="account"><p><strong>{name}</strong><span>{email}</span></p>
-        <div className="account-actions"><Link href="/calendriers-lies" onClick={() => menu.current?.hidePopover()}>Calendriers liés</Link><Link href="/claude" onClick={() => menu.current?.hidePopover()}>Connecter Claude</Link><Logout /></div>
+        <div className="account-actions"><Logout /></div>
       </div>
     </div>
   </>;
