@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import localFont from "next/font/local";
+import { ViewTransition } from "react";
 import { session } from "../server/session";
 import { AccountMenu } from "./components/account-menu";
 import { Navigation } from "./components/navigation";
@@ -32,7 +33,14 @@ export default async function RootLayout({
             <nav className="guest-nav" aria-label="Compte"><Link href="/connexion">Connexion</Link></nav>
           </>}
         </header>
-        <main id="contenu" tabIndex={-1}>{children}</main>
+        <main id="contenu" tabIndex={-1}>
+          <ViewTransition
+            enter={{ default: "vt-fade-in", "swipe-next": "vt-slide-in-next", "swipe-prev": "vt-slide-in-prev" }}
+            exit={{ default: "vt-fade-out", "swipe-next": "vt-slide-out-next", "swipe-prev": "vt-slide-out-prev" }}
+          >
+            <div className="vt-page">{children}</div>
+          </ViewTransition>
+        </main>
         <datalist id="timezones"><option value="Europe/Paris" /><option value="Europe/London" /><option value="America/Montreal" /><option value="America/New_York" /><option value="Asia/Tokyo" /><option value="UTC" /></datalist>
         <footer className="app-footer"><p>FSC · logiciel libre · WTFPL v2</p></footer>
         {current?.user.emailVerified && <Navigation />}

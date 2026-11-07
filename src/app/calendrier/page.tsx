@@ -23,9 +23,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
     <p className="field-help"><Link href="/calendriers-lies">Lier un autre calendrier</Link></p>
     <div className="month-toolbar"><h2>{monthTitle}</h2>
       <nav className="month-nav" aria-label="Navigation des mois">
-        <Link href={previousHref} aria-label="Mois précédent" title="Mois précédent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg></Link>
+        <Link href={previousHref} transitionTypes={["swipe-prev"]} aria-label="Mois précédent" title="Mois précédent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg></Link>
         <Link href="/calendrier">Aujourd’hui</Link>
-        <Link href={nextHref} aria-label="Mois suivant" title="Mois suivant"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></Link>
+        <Link href={nextHref} transitionTypes={["swipe-next"]} aria-label="Mois suivant" title="Mois suivant"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></Link>
       </nav>
     </div>
     <MonthSwipe previousHref={previousHref} nextHref={nextHref}>
