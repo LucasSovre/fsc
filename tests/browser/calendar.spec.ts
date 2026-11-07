@@ -94,6 +94,7 @@ test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et 
   const response = await page.request.get(feedURL!);
   expect(response.status()).toBe(200);
   expect(await response.text()).toContain("Solo confidentiel");
+  await soloSection.getByLabel("Confirmer la révocation du lien actuel").check();
   await soloSection.getByRole("button", { name: "Révoquer le lien d’abonnement" }).click();
   await expect(soloSection.getByText("Abonnement révoqué.", { exact: true })).toBeVisible();
   expect((await page.request.get(feedURL!)).status()).toBe(404);

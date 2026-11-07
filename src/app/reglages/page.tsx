@@ -44,6 +44,9 @@ export default async function Page() {
         <p><a href={`/exports/${c.id}.ics`}>Télécharger le fichier .ics<span className="sr-only"> ({c.kind === "solo" ? "Solo" : "Commun"})</span></a></p>
         <ActionForm action={feedAction}><input type="hidden" name="calendarId" value={c.id} />
           <p><button name="operation" value="rotate">Créer ou renouveler le lien d’abonnement<span className="sr-only"> ({c.kind === "solo" ? "Solo" : "Commun"})</span></button></p>
+        </ActionForm>
+        <ActionForm action={feedAction}><input type="hidden" name="calendarId" value={c.id} />
+          <p><label><input type="checkbox" required disabled={!feeds.some(f => f.calendarId === c.id)} /> Confirmer la révocation du lien actuel<span className="sr-only"> ({c.kind === "solo" ? "Solo" : "Commun"})</span></label></p>
           <p><button className="button-danger" name="operation" value="revoke" disabled={!feeds.some(f => f.calendarId === c.id)}>Révoquer le lien d’abonnement<span className="sr-only"> ({c.kind === "solo" ? "Solo" : "Commun"})</span></button></p>
         </ActionForm>
       </section>)}
