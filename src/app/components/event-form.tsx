@@ -10,9 +10,10 @@ export function EventForm({ event, zone, tags, canCommon, creator, day, reminder
     : day ? Temporal.PlainDate.from(day).toPlainDateTime("09:00") : Temporal.Now.zonedDateTimeISO(zone).toPlainDateTime().round({ smallestUnit: "hour", roundingMode: "ceil" });
   const end = event?.endsAt ? Temporal.Instant.from(event.endsAt.toISOString()).toZonedDateTimeISO(tz).toPlainDateTime() : start.add({ hours: 1 });
   const startDate = event?.startDate || start.toPlainDate().toString();
-  const endDate = event?.endDate || Temporal.PlainDate.from(startDate).add({ days: 1 }).toString();
+  const endDate = event?.endDate ? Temporal.PlainDate.from(event.endDate).subtract({ days: 1 }).toString() : startDate;
   return <ActionForm action={eventAction}>
     <fieldset className="visibility-field"><legend>Qui peut voir cet événement ?</legend>
+      <p className="field-help">Choisis Solo ou Commun pour continuer.</p>
       <div className="visibility-options">
         <label className="visibility-option visibility-solo"><input type="radio" name="visibility" value="solo" required defaultChecked={event?.visibility === "solo"} disabled={!!event && !creator && event.visibility !== "solo"} /><span>Solo<span className="sr-only"> — visible uniquement par toi</span></span><svg className="visibility-check" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9" /><path d="m6 10 3 3 5-6" /></svg></label>
         <label className="visibility-option visibility-common"><input type="radio" name="visibility" value="common" required defaultChecked={event?.visibility === "common"} disabled={!canCommon || (!!event && !creator && event.visibility !== "common")} /><span>Commun<span className="sr-only"> — visible et modifiable par vous deux</span></span><svg className="visibility-check" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9" /><path d="m6 10 3 3 5-6" /></svg></label>
@@ -23,6 +24,7 @@ export function EventForm({ event, zone, tags, canCommon, creator, day, reminder
     {event && <><input type="hidden" name="id" value={event.id} /><input type="hidden" name="version" value={event.version} /></>}
     <p><label>Titre <input name="title" required maxLength={300} defaultValue={event?.title} /></label></p>
     <EventDates initial={{ allDay: event?.allDay ?? false, start: start.toString({ smallestUnit: "minute" }), end: end.toString({ smallestUnit: "minute" }), startDate, endDate, timeZone: tz }} />
+    <details className="form-more" open={!!event && !!(event.location || event.description || event.tags.length || reminder?.mode === "custom")}><summary>Plus d’options : lieu, description, tags, rappel</summary>
     <p><label>Lieu <input name="location" maxLength={500} defaultValue={event?.location} /></label></p>
     <p><label>Description <textarea name="description" maxLength={10000} defaultValue={event?.description} rows={5} /></label></p>
     <fieldset><legend>Tags (facultatifs)</legend>
@@ -31,6 +33,7 @@ export function EventForm({ event, zone, tags, canCommon, creator, day, reminder
       <p>Les noms de tags sont partagés dans le couple. Les événements solo associés restent privés.</p>
     </fieldset>
     <EventReminderFields initial={reminder} defaults={reminderDefaults} />
-    <button type="submit">{event ? "Enregistrer les modifications" : "Créer l’événement"}</button>
+    </details>
+    <p className="sticky-submit"><button type="submit">{event ? "Enregistrer les modifications" : "Créer l’événement"}</button></p>
   </ActionForm>;
 }

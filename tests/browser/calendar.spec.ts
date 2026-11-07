@@ -30,8 +30,8 @@ test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et 
   await menuTrigger.click();
   await page.getByRole("heading", { name: "À venir" }).click();
   await expect(accountMenu).not.toBeVisible();
-  await menuTrigger.click();
-  await accountMenu.getByRole("link", { name: "Connecter Claude" }).click();
+  await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Réglages" }).click();
+  await page.getByRole("link", { name: "Connecter Claude" }).click();
   await expect(page.getByRole("heading", { name: "Connecter Claude" })).toBeVisible();
   await expect(accountMenu).not.toBeVisible();
   const nav = page.getByRole("navigation", { name: "Navigation principale" });
@@ -50,7 +50,8 @@ test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et 
   await page.getByLabel("Titre", { exact: true }).fill(name);
   await page.getByLabel("Journée entière", { exact: true }).check();
   await page.getByLabel("Premier jour", { exact: true }).fill("2027-03-10");
-  await page.getByLabel("Fin exclusive", { exact: true }).fill("2027-03-11");
+  await page.getByLabel("Dernier jour (inclus)", { exact: true }).fill("2027-03-10");
+  await page.getByText("Plus d’options", { exact: false }).click();
   await page.getByLabel("Nouveaux tags, séparés par des virgules").fill("Famille, Important");
   await page.getByRole("button", { name: "Créer l’événement", exact: true }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();

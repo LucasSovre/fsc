@@ -1,14 +1,28 @@
 import nodemailer from "nodemailer";
+import { getSmtpConfig, type SmtpConfig } from "./smtp";
 
-export async function sendMail(to: string, subject: string, text: string) {
-  if (!process.env.SMTP_HOST) throw new Error("Le service e-mail n’est pas configuré.");
-  const transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === "true",
-    auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD } : undefined,
+function transportFor(config: SmtpConfig) {
+  return nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: config.user ? { user: config.user, pass: config.password } : undefined,
     connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 15_000,
   });
-  try { await transport.sendMail({ from: process.env.SMTP_FROM || "FSC <fsc@localhost>", to, subject, text }); }
+}
+export async function sendMail(to: string, subject: string, text: string) {
+  const config = await getSmtpConfig();
+  if (!config) throw new Error("Le service e-mail n’est pas configuré.");
+  const transport = transportFor(config);
+  try { await transport.sendMail({ from: config.from, to, subject, text }); }
   finally { transport.close(); }
+}
+export async function testSmtp(to: string) {
+  const config = await getSmtpConfig();
+  if (!config) throw new Error("Enregistre d’abord la configuration SMTP.");
+  const transport = transportFor(config);
+  try {
+    await transport.verify();
+    await transport.sendMail({ from: config.from, to, subject: "Test SMTP FSC", text: "La configuration SMTP de FSC fonctionne." });
+  } finally { transport.close(); }
 }

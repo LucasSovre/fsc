@@ -12,10 +12,16 @@ const destinations = [
   { href: "/reglages", label: "Réglages", icon: "settings" },
 ] as const;
 
+const isActive = (pathname: string, href: string) => {
+  if (href === "/") return pathname === "/";
+  if (href === "/calendrier") return pathname === href || (pathname.startsWith("/evenements/") && pathname !== "/evenements/nouveau");
+  return pathname === href || pathname.startsWith(`${href}/`);
+};
+
 export function Navigation() {
   const pathname = usePathname();
   return <nav className="bottom-nav" aria-label="Navigation principale">
-    {destinations.map(({ href, label, icon }) => <Link key={href} href={href} aria-current={pathname === href ? "page" : undefined}>
+    {destinations.map(({ href, label, icon }) => <Link key={href} href={href} aria-current={isActive(pathname, href) ? "page" : undefined}>
       <Icon name={icon} /><span>{label}</span>
     </Link>)}
   </nav>;

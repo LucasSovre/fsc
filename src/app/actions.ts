@@ -1,14 +1,18 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireUser } from "../server/session";
+import { Temporal } from "temporal-polyfill";
+import { assertAdmin, requireUser } from "../server/session";
+import { rows } from "../server/database";
+import { saveSmtpConfig } from "../server/smtp";
 import { acceptInvitation, createInvitation, deleteEvent, leaveCalendar, revokeFeed, revokeInvitation, rotateFeed, saveEvent, saveEventReminder, savePreferences } from "../server/calendar";
 import { errorMessage, DomainError } from "../server/validation";
-import { sendMail } from "../server/mail";
+import { sendMail, testSmtp } from "../server/mail";
 import { addPushSubscription, removePushSubscription } from "../server/push";
 import { revokeConnection } from "../server/oauth";
 import { completeTodo, deleteTodo, saveTodo, saveTodoEmailPreference } from "../server/todo";
 import { addLinkedCalendar, removeLinkedCalendar, setLinkedCalendarEnabled, syncLinkedCalendar } from "../server/linked-calendars";
+import { setTravelDays } from "../server/travel";
 
 export type ActionState = { message?: string; error?: string; href?: string; redirectTo?: string; refresh?: boolean };
 async function run(work: (userId: string) => Promise<ActionState>): Promise<ActionState> {
@@ -21,6 +25,13 @@ async function run(work: (userId: string) => Promise<ActionState>): Promise<Acti
 }
 const text = (form: FormData, name: string) => String(form.get(name) ?? "");
 const checked = (form: FormData, name: string) => form.get(name) === "on";
+export async function travelAction(_: ActionState, form: FormData) {
+  return run(async userId => {
+    const marked = z.enum(["mark", "remove"]).parse(text(form, "operation")) === "mark";
+    await setTravelDays(userId, { startDate: text(form, "startDate"), endDate: text(form, "endDate") }, marked);
+    return { message: marked ? "Tes jours de déplacement ont été enregistrés." : "Ton marquage a été retiré pour cette période." };
+  });
+}
 function eventReminderInput(form: FormData) {
   const mode = text(form, "eventReminderMode");
   if (mode !== "custom") return { mode };
@@ -28,17 +39,26 @@ function eventReminderInput(form: FormData) {
   const value = text(form, "eventReminderValue").trim();
   return { mode, reminderMinutes: value ? Number(value) * unit : NaN, emailEnabled: checked(form, "eventReminderEmail"), pushEnabled: checked(form, "eventReminderPush") };
 }
+function exclusiveEnd(start: string, last: string) {
+  try {
+    if (Temporal.PlainDate.compare(last, start) < 0) throw new DomainError("Le dernier jour doit être le même jour que le premier, ou après.");
+    return Temporal.PlainDate.from(last).add({ days: 1 }).toString();
+  } catch (error) {
+    if (error instanceof DomainError) throw error;
+    return last;
+  }
+}
 export async function eventAction(_: ActionState, form: FormData) {
   return run(async userId => {
     const allDay = checked(form, "allDay");
     const event = await saveEvent(userId, {
       visibility: text(form, "visibility"), title: text(form, "title"), description: text(form, "description"), location: text(form, "location"),
       tags: [...form.getAll("tags").map(String), ...text(form, "newTags").split(",").map(s => s.trim()).filter(Boolean)],
-      temporalData: allDay ? { allDay: true, startDate: text(form, "startDate"), endDate: text(form, "endDate") }
+      temporalData: allDay ? { allDay: true, startDate: text(form, "startDate"), endDate: exclusiveEnd(text(form, "startDate"), text(form, "endDate")) }
         : { allDay: false, start: text(form, "startOffset").trim() || text(form, "start"), end: text(form, "endOffset").trim() || text(form, "end"), timeZone: text(form, "timeZone") },
     }, form.get("id") ? { id: text(form, "id"), version: Number(text(form, "version")), confirmVisibility: checked(form, "confirmVisibility") } : undefined,
     form.has("eventReminderMode") ? eventReminderInput(form) : undefined);
-    return { redirectTo: `/evenements/${event.id}` };
+    return { redirectTo: `/evenements/${event.id}?ok=enregistre` };
   });
 }
 export async function eventReminderAction(_: ActionState, form: FormData) {
@@ -51,7 +71,7 @@ export async function deleteEventAction(_: ActionState, form: FormData) {
   return run(async userId => {
     if (!checked(form, "confirm")) throw new DomainError("Confirme la suppression.");
     await deleteEvent(userId, text(form, "id"), Number(text(form, "version")));
-    return { redirectTo: "/" };
+    return { redirectTo: "/?ok=supprime" };
   });
 }
 export async function preferencesAction(_: ActionState, form: FormData) {
@@ -62,6 +82,25 @@ export async function preferencesAction(_: ActionState, form: FormData) {
       reminderMode: text(form, "reminderMode"), selectedTags: form.getAll("selectedTags").map(String),
     });
     return { message: "Réglages enregistrés." };
+  });
+}
+export async function smtpAction(_: ActionState, form: FormData) {
+  return run(async userId => {
+    await assertAdmin(userId);
+    await saveSmtpConfig({
+      host: text(form, "host"), port: Number(text(form, "port")), secure: checked(form, "secure"),
+      user: text(form, "user"), password: text(form, "password"), from: text(form, "from"),
+    });
+    return { message: "Configuration SMTP enregistrée." };
+  });
+}
+export async function smtpTestAction() {
+  return run(async userId => {
+    await assertAdmin(userId);
+    const [user] = await rows<{ email: string }>('SELECT email FROM "user" WHERE id=$1', [userId]);
+    try { await testSmtp(user.email); }
+    catch (error) { throw new DomainError(`Le test SMTP a échoué : ${error instanceof Error ? error.message : "erreur inconnue"}`); }
+    return { message: `E-mail de test envoyé à ${user.email}.` };
   });
 }
 export async function inviteAction(_: ActionState, form: FormData) {

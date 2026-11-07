@@ -4,6 +4,7 @@ import { account, accessibleCalendar } from "./calendar";
 import { rows, transaction, type Connection } from "./database";
 import { DomainError, todoSchema } from "./validation";
 import type { Todo } from "./types";
+import { isMailConfigured } from "./smtp";
 
 const accessible = `(c."ownerId"=$1 OR EXISTS(SELECT 1 FROM member m WHERE m."calendarId"=c.id AND m."userId"=$1))`;
 
@@ -57,7 +58,7 @@ export async function deleteTodo(userId: string, id: string, version: number) {
 }
 export async function saveTodoEmailPreference(userId: string, raw: unknown) {
   const enabled = z.boolean().parse(raw);
-  if (enabled && !process.env.SMTP_HOST) throw new DomainError("Le service e-mail n’est pas configuré.");
+  if (enabled && !(await isMailConfigured())) throw new DomainError("Le service e-mail n’est pas configuré.");
   return transaction(async db => {
     await account(db, userId);
     await db.query('UPDATE profile SET "todoEmailEnabled"=$2 WHERE "userId"=$1', [userId, enabled]);

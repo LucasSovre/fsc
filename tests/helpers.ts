@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { auth, createCLIAuth } from "../src/server/auth";
 import { baseURL } from "../src/server/config";
 import { databaseUrl } from "../src/server/database-url";
+import { saveSmtpConfig } from "../src/server/smtp";
 
 export function assertTestDatabase() {
   const url = new URL(databaseUrl());
@@ -16,8 +17,12 @@ export async function authRequest(path: string, body?: unknown, cookie?: string)
   if (cookie) headers.set("Cookie", cookie);
   return auth.handler(new Request(`${baseURL}/api/auth${path}`, { method: body === undefined ? "GET" : "POST", headers, body: body === undefined ? undefined : oauthForm ? new URLSearchParams(body as Record<string, string>).toString() : JSON.stringify(body) }));
 }
-export async function register(name = "Compte") {
+export async function seedSmtp() {
   assertTestDatabase();
+  await saveSmtpConfig({ host: process.env.SMTP_HOST || "127.0.0.1", port: Number(process.env.SMTP_PORT || 1025), secure: false, from: "FSC <fsc@fsc.test>" });
+}
+export async function register(name = "Compte") {
+  await seedSmtp();
   const email = `${randomUUID()}@fsc.test`;
   await createCLIAuth().api.signUpEmail({ body: { name, email, password, callbackURL: "/" } });
   const mailbox = process.env.MAILPIT_URL || "http://127.0.0.1:18025";

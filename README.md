@@ -19,8 +19,8 @@ Pas de création de séries récurrentes natives, de CalDAV ni de synchronisatio
 
 ## Images publiées sur GitHub Container Registry
 
-Le workflow `.github/workflows/publish-container.yml` construit et publie les trois
-cibles du Dockerfile sur GHCR, sans secret ni variable à créer : il utilise le
+Le workflow `.github/workflows/publish-container.yml` construit et publie l’image
+unique du Dockerfile sur GHCR, sans secret ni variable à créer : il utilise le
 `GITHUB_TOKEN` fourni automatiquement et les permissions déclarées dans le workflow.
 Le nom du dépôt et sa branche principale sont détectés automatiquement.
 
@@ -29,21 +29,18 @@ Publication à chaque push sur la branche principale, sur les tags `v*`, ou depu
 publient pas automatiquement. Les images Linux `amd64` partagent le package
 `ghcr.io/<propriétaire>/<dépôt>`, en minuscules :
 
-| Service | Branche principale | Tag Git `v1.2.3` | Commit précis |
+| Image | Branche principale | Tag Git `v1.2.3` | Commit précis |
 | --- | --- | --- | --- |
-| App | `latest` | `v1.2.3` | `sha-<SHA complet>` |
-| Worker | `worker` | `worker-v1.2.3` | `worker-sha-<SHA complet>` |
-| Migrations | `migrate` | `migrate-v1.2.3` | `migrate-sha-<SHA complet>` |
+| FSC (app + worker + migrations) | `latest` | `v1.2.3` | `sha-<SHA complet>` |
 
 Un lancement manuel hors branche principale produit les tags de commit, sans
-remplacer `latest`, `worker` ou `migrate`. Utiliser les trois images du même commit
-pour garder l’application, le worker et les migrations alignés. Les paramètres de
-base de données, SMTP et authentification restent des variables d’exécution :
+remplacer `latest`. Les paramètres de
+base de données et authentification restent des variables d’exécution (le SMTP se configure dans l’application) :
 aucun n’est requis pour construire ou publier les images.
 
 ## Démarrage Docker
 
-Prérequis : Docker Compose v2 et un SMTP. Pour un déploiement public, ajouter un
+Prérequis : Docker Compose v2 et un serveur SMTP, à renseigner ensuite dans Réglages. Pour un déploiement public, ajouter un
 domaine HTTPS et un reverse proxy.
 
 ```sh
@@ -55,13 +52,12 @@ Configurer au minimum :
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` : identifiants PostgreSQL. L’URL de connexion est construite automatiquement, avec encodage des caractères spéciaux.
 - `BETTER_AUTH_SECRET` : secret aléatoire d’au moins 32 caractères, stable entre déploiements.
 - `BETTER_AUTH_URL` : `http://localhost:3000` pour Docker local, ou l’origine HTTPS publique exacte, sans chemin, par exemple `https://calendar.example.com`.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` : vérification, invitations, reset et rappels.
 - Facultatif : clés Web Push générées une fois avec `bunx web-push generate-vapid-keys`, puis `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
 
 ```sh
 docker compose up -d --build
 docker compose ps
-docker compose logs -f app worker migrate
+docker compose logs -f app
 ```
 
 Le mode production des images Docker accepte HTTP sur `localhost`, `127.0.0.1` et
@@ -69,8 +65,8 @@ Le mode production des images Docker accepte HTTP sur `localhost`, `127.0.0.1` e
 connecter Claude. Le message « Next.js Ready » affiche l’écoute interne HTTP du
 conteneur ; le reverse proxy assure le HTTPS public.
 
-Compose démarre PostgreSQL, applique la migration initiale, puis démarre l’application et
-un worker unique. Une migration en échec empêche leur démarrage. L’application est exposée
+Compose démarre PostgreSQL, démarre le conteneur `app` qui applique les migrations, puis lance l’application et
+un worker unique dans le même conteneur. Une migration en échec empêche leur démarrage ; ne pas lancer plusieurs réplicas de `app`. L’application est exposée
 sur le port `3000` de l’hôte par défaut (`APP_PORT`) ; la base reste dans le réseau Docker. Les images tournent
 avec un utilisateur non-root. Les identifiants ne sont pas nécessaires au build.
 
@@ -91,7 +87,7 @@ accès au terminal peut créer un compte ; les invitations ne créent pas de com
 Avec Docker, après le démarrage de la base et les migrations :
 
 ```sh
-docker compose exec worker node --import tsx scripts/create-account.ts --email alice@example.com --name Alice
+docker compose exec app node --import tsx scripts/create-account.ts --email alice@example.com --name Alice
 ```
 
 En développement local (connexion PostgreSQL configurée dans `.env`) :
@@ -105,6 +101,19 @@ Le mot de passe est demandé deux fois, sans affichage. Pour une automatisation,
 dans les arguments de commande. Un e-mail de vérification est envoyé et reste
 obligatoire avant connexion. Une tentative de connexion à un compte non vérifié
 renvoie cet e-mail si nécessaire. La réinitialisation du mot de passe reste disponible.
+
+### Administrateur et configuration SMTP
+
+Le SMTP se configure dans Réglages, section « E-mail (SMTP) », visible uniquement
+par les administrateurs, avec un bouton de test d’envoi. Le mot de passe SMTP est
+stocké chiffré en base. Créer le premier administrateur (compte déjà vérifié, sans
+SMTP requis) :
+
+```sh
+docker compose exec app node --import tsx scripts/create-account.ts --email admin@example.com --name Admin --admin
+```
+
+Pour promouvoir un compte existant : même commande avec `--email` et `--admin` seulement.
 
 ### HTTPS et proxy
 
@@ -133,30 +142,30 @@ du proxy : elles contiennent des secrets.
 
 `GET /health` vérifie la configuration de production et l’accès au schéma. Le worker
 met à jour un heartbeat PostgreSQL ; son healthcheck échoue après deux minutes sans
-passage réussi. Ne pas lancer plusieurs réplicas du worker.
+passage réussi. Ne pas lancer plusieurs réplicas de `app` (il embarque le worker).
 
 ### E-mails de développement
 
 Pour capturer les e-mails sans les envoyer à leurs destinataires :
 
 ```sh
-# Dans .env : SMTP_HOST=mailpit, SMTP_PORT=1025, SMTP_SECURE=false,
-# SMTP_USER et SMTP_PASSWORD vides.
 docker compose --profile mailpit up -d --build
 ```
 
+Dans Réglages, section E-mail (SMTP), saisir l’hôte `mailpit`, le port `1025`, sans
+connexion sécurisée ni identifiants, puis utiliser « Tester le SMTP ».
 Boîte de réception locale : <http://localhost:8025>. Le profil Mailpit ne relaie pas
 les messages vers Internet. Utiliser un SMTP réel lors du déploiement public.
 
 ## Développement direct
 
-Prérequis : Bun, Node compatible avec Next.js, PostgreSQL 17 et un SMTP de développement.
+Prérequis : Bun, Node compatible avec Next.js, PostgreSQL 17 et un serveur SMTP de développement.
 
 ```sh
 bun install
 # Dans .env : POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
 # POSTGRES_HOST=localhost et POSTGRES_PORT=5432 (ou ton serveur PostgreSQL),
-# BETTER_AUTH_URL=http://localhost:3000 et SMTP de développement.
+# BETTER_AUTH_URL=http://localhost:3000.
 bun run migrate
 bun run dev
 # Dans un second terminal avec la même configuration :
@@ -225,7 +234,7 @@ personnelles correspondantes et annule les rappels en attente.
 
 Avant d’utiliser cette fonctionnalité sur une installation existante, appliquer les
 migrations (`bun run migrate` en local, ou la procédure Docker ci-dessus), puis
-redémarrer l’application et le worker.
+redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
 
 Pour une journée entière, le rappel vise 9 h le premier jour dans le fuseau du
 destinataire, moins son délai. En mode Tags sélectionnés, un seul tag correspondant
@@ -312,7 +321,7 @@ locales et réservées sont refusées. Aucun cookie ou identifiant de compte dis
 n’est transmis. Les téléchargements sont limités en temps et en taille.
 
 La migration `linked_calendars` est additive. Appliquer `bun run migrate` avant de
-redémarrer l’application et le worker, ou suivre la procédure Docker habituelle.
+redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
 Les tests serveur utilisent des flux de test, sans appeler de calendrier privé réel.
 
 ## Todo et récapitulatif quotidien
@@ -347,7 +356,7 @@ le récapitulatif du lendemain.
 
 La migration `todos_daily_digest` ajoute les tables Todo et leur journal d’envoi,
 ainsi que la préférence personnelle. Appliquer `bun run migrate` avant de
-redémarrer l’application et le worker, ou suivre la procédure Docker habituelle.
+redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
 
 ## Claude et MCP
 
@@ -386,6 +395,18 @@ Références : [Better Auth OAuth Provider](https://better-auth.com/docs/plugins
 [connexion Claude](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp),
 [Web Push sur iPhone](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/).
 
+## Jours en déplacement
+
+Dans Calendrier, « Marquer un déplacement » permet d’ajouter ou retirer ses propres
+jours, du début à la fin inclus (366 jours maximum). « Afficher les déplacements »
+colore les jours concernés en pêche et affiche les noms dans le détail du jour,
+sans masquer les événements. Ce choix est mémorisé par compte dans le navigateur.
+Les jours sont partagés uniquement avec le partenaire actuel du calendrier commun.
+Ils ne figurent ni dans les exports/abonnements ICS, ni dans les rappels ou le MCP.
+
+La migration `travel_days` doit être appliquée avec `bun run migrate` avant de
+servir cette version. Elle ajoute une table indépendante sans modifier les événements.
+
 ## Tests
 
 ```sh
@@ -397,8 +418,8 @@ bun run build
 
 Les tests d’intégration exigent volontairement un nom de base terminant par `_test`.
 Ils créent des comptes uniques et n’effacent pas une base existante. Préparer une
-base migrée et un Mailpit local, puis définir les variables `POSTGRES_*`, `SMTP_HOST`,
-`SMTP_PORT`, `MAILPIT_URL` et `BETTER_AUTH_URL=http://localhost:3000` :
+base migrée et un Mailpit local, puis définir les variables `POSTGRES_*`, `SMTP_HOST`
+et `SMTP_PORT` (lues uniquement par les tests, qui enregistrent la config SMTP en base), `MAILPIT_URL` et `BETTER_AUTH_URL=http://localhost:3000` :
 
 ```sh
 bun run migrate
@@ -454,5 +475,5 @@ pg_restore --no-owner --dbname="$POSTGRES_DB" fsc.dump
 
 Restaurer aussi `BETTER_AUTH_SECRET` et les clés VAPID pour conserver la validité des
 sessions/clients chiffrés et abonnements push. Après restauration, exécuter les migrations
-en attente avant de redémarrer application et worker. Ne pas remettre automatiquement
+en attente avant de redémarrer l’application (en Docker, le conteneur `app` les applique au démarrage). Ne pas remettre automatiquement
 en attente des rappels `dispatching`, `uncertain` ou `sent`.

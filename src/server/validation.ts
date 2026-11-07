@@ -73,6 +73,15 @@ export function localDate(when: Date, zone: string) {
 export function dayInstant(date: string, zone: string, hour = 0) {
   return new Date(Temporal.PlainDate.from(date).toZonedDateTime({ timeZone: zone, plainTime: `${String(hour).padStart(2, "0")}:00` }).epochMilliseconds);
 }
+export const smtpSchema = z.object({
+  host: z.string().trim().min(1, "L’hôte SMTP est obligatoire.").max(253),
+  port: z.number({ error: "Le port doit être un nombre." }).int().min(1, "Le port est invalide.").max(65535, "Le port est invalide."),
+  secure: z.boolean(),
+  user: z.string().trim().max(254).default(""),
+  password: z.string().max(500).default(""),
+  from: z.string().trim().min(1, "L’expéditeur est obligatoire.").max(254),
+});
+export type SmtpInput = z.input<typeof smtpSchema>;
 export function errorMessage(error: unknown) {
   if (error instanceof DomainError) return error.message;
   if (error instanceof z.ZodError) return error.issues.map(i => i.message).join(" ");
