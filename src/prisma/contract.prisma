@@ -299,6 +299,9 @@ model Event {
   title String
   description String @default("")
   location String @default("")
+  type String?
+  link String @default("")
+  attachments EventAttachment[]
   allDay Boolean
   startsAt DateTime?
   endsAt DateTime?
@@ -314,10 +317,23 @@ model Event {
   sourceKey String?
   @@unique([linkedCalendarId, sourceKey])
   @@check(expression: sql`("linkedCalendarId" IS NULL) = ("sourceKey" IS NULL)`, name: "event_source")
+  @@check(expression: sql`type IS NULL OR type IN ('spectacle', 'sortie', 'vacances', 'visio', 'travail')`, name: "event_type")
   @@index([calendarId, startsAt])
   @@index([calendarId, startDate])
   @@check(expression: sql`( "allDay" AND "startDate" IS NOT NULL AND "endDate" > "startDate" AND "startsAt" IS NULL AND "endsAt" IS NULL ) OR (NOT "allDay" AND "startsAt" IS NOT NULL AND "endsAt" > "startsAt" AND "startDate" IS NULL AND "endDate" IS NULL)`, name: "event_dates")
   @@map("event")
+}
+
+model EventAttachment {
+  id String @id
+  eventId String
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name String
+  mime String
+  size Int
+  createdAt DateTime @default(now())
+  @@index([eventId])
+  @@map("eventAttachment")
 }
 
 model LinkedCalendar {

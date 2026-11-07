@@ -131,7 +131,7 @@ export async function tick(sender: Sender = defaultSender, now = new Date()) {
         try {
           if (reminder.channel === "email") {
             const date = data.event.allDay ? `${data.event.startDate} (journée entière)` : new Intl.DateTimeFormat("fr-FR", { timeZone: data.profile.timeZone, dateStyle: "full", timeStyle: "short" }).format(data.event.startsAt!);
-            await sender.email(data.user.email, `FSC — ${data.event.title}`, `${data.event.title}\n${date}\n${data.event.location}\n${baseURL}/evenements/${data.event.id}`);
+            await sender.email(data.user.email, `FSC — ${data.event.title}`, `${data.event.title}\n${date}\n${data.event.location}\n${data.event.link ? `${data.event.link}\n` : ""}${baseURL}/evenements/${data.event.id}`);
           } else {
             // Fetch the title only after opening FSC. A notification queued on a
             // device must not retain private event data after access is lost.

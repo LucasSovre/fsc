@@ -1,0 +1,328 @@
+[
+  {
+    "id": "table.eventAttachment",
+    "label": "Create table \"eventAttachment\"",
+    "summary": "Creates table \"eventAttachment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "eventAttachment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"eventAttachment\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"eventAttachment\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"eventAttachment\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"eventAttachment\"",
+        "sql": "CREATE TABLE \"public\".\"eventAttachment\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"eventId\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"mime\" text NOT NULL,\n  \"name\" text NOT NULL,\n  \"size\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"eventAttachment\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"eventAttachment\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"eventAttachment\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.event.link",
+    "label": "Add column \"link\" to \"event\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "link",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"link\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "link"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"link\" on \"event\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"link\"",
+        "sql": "ALTER TABLE \"public\".\"event\" ADD COLUMN \"link\" text DEFAULT '' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"link\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "link"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"link\" on \"event\""
+        }
+      },
+      {
+        "description": "verify column \"link\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "link",
+          "text"
+        ]
+      },
+      {
+        "description": "verify column \"link\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "link",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.event.type",
+    "label": "Add column \"type\" to \"event\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "type",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"type\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "type"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"type\" on \"event\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"type\"",
+        "sql": "ALTER TABLE \"public\".\"event\" ADD COLUMN \"type\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"type\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "type"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"type\" on \"event\""
+        }
+      },
+      {
+        "description": "verify column \"type\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "event",
+          "type",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.event.event_type_223f83b0",
+    "label": "Add check constraint \"event_type_223f83b0\" on \"event\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "event_type_223f83b0",
+        "table": "event"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"event_type_223f83b0\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "event_type_223f83b0",
+          "public",
+          "\"public\".\"event\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"event_type_223f83b0\" on \"event\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"event_type_223f83b0\"",
+        "sql": "ALTER TABLE \"public\".\"event\" ADD CONSTRAINT \"event_type_223f83b0\" CHECK (type IS NULL OR type IN ('spectacle', 'sortie', 'vacances', 'visio', 'travail'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"event_type_223f83b0\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "event_type_223f83b0",
+          "public",
+          "\"public\".\"event\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.eventAttachment.eventAttachment_eventId_idx_6a266d47",
+    "label": "Create index \"eventAttachment_eventId_idx_6a266d47\" on \"eventAttachment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "eventAttachment_eventId_idx_6a266d47",
+        "table": "eventAttachment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"eventAttachment_eventId_idx_6a266d47\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"eventAttachment_eventId_idx_6a266d47\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"eventAttachment_eventId_idx_6a266d47\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"eventAttachment_eventId_idx_6a266d47\"",
+        "sql": "CREATE INDEX \"eventAttachment_eventId_idx_6a266d47\" ON \"public\".\"eventAttachment\" (\"eventId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"eventAttachment_eventId_idx_6a266d47\" exists on \"eventAttachment\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"eventAttachment_eventId_idx_6a266d47\"",
+          "i",
+          "I",
+          "\"public\".\"eventAttachment\"",
+          "btree",
+          "[\"eventId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.eventAttachment.eventAttachment_eventId_fkey",
+    "label": "Add foreign key \"eventAttachment_eventId_fkey\" on \"eventAttachment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "eventAttachment_eventId_fkey",
+        "table": "eventAttachment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"eventAttachment_eventId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "eventAttachment_eventId_fkey",
+          "public",
+          "\"public\".\"eventAttachment\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"eventAttachment_eventId_fkey\" on \"eventAttachment\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"eventAttachment_eventId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"eventAttachment\"\nADD CONSTRAINT \"eventAttachment_eventId_fkey\"\nFOREIGN KEY (\"eventId\")\nREFERENCES \"public\".\"event\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"eventAttachment_eventId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "eventAttachment_eventId_fkey",
+          "public",
+          "\"public\".\"eventAttachment\"",
+          "f",
+          "[\"eventId\"]",
+          "\"public\".\"event\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  }
+]

@@ -6,6 +6,7 @@ import { assertAdmin, sendSmtpTest } from "../server/admin";
 import { requireUser } from "../server/session";
 import { saveSmtpConfig } from "../server/smtp";
 import { acceptInvitation, deleteEvent, leaveCalendar, revokeFeed, revokeInvitation, rotateFeed, saveEvent, saveEventReminder, savePreferences } from "../server/calendar";
+import { removeEventFiles, syncAttachments } from "../server/attachments";
 import { errorMessage, DomainError } from "../server/validation";
 import { inviteByMail } from "../server/invitation-mail";
 import { addPushSubscription, removePushSubscription } from "../server/push";
@@ -53,11 +54,13 @@ export async function eventAction(_: ActionState, form: FormData) {
     const allDay = checked(form, "allDay");
     const event = await saveEvent(userId, {
       visibility: text(form, "visibility"), title: text(form, "title"), description: text(form, "description"), location: text(form, "location"),
+      type: text(form, "type") || null, link: text(form, "link"),
       tags: [...form.getAll("tags").map(String), ...text(form, "newTags").split(",").map(s => s.trim()).filter(Boolean)],
       temporalData: allDay ? { allDay: true, startDate: text(form, "startDate"), endDate: exclusiveEnd(text(form, "startDate"), text(form, "endDate")) }
         : { allDay: false, start: text(form, "startOffset").trim() || text(form, "start"), end: text(form, "endOffset").trim() || text(form, "end"), timeZone: text(form, "timeZone") },
     }, form.get("id") ? { id: text(form, "id"), version: Number(text(form, "version")), confirmVisibility: checked(form, "confirmVisibility") } : undefined,
     form.has("eventReminderMode") ? eventReminderInput(form) : undefined);
+    await syncAttachments(userId, event.id, form.getAll("files").filter((f): f is File => f instanceof File), form.getAll("removeAttachment").map(String));
     return { redirectTo: `/evenements/${event.id}?ok=enregistre` };
   });
 }
@@ -71,6 +74,7 @@ export async function deleteEventAction(_: ActionState, form: FormData) {
   return run(async userId => {
     if (!checked(form, "confirm")) throw new DomainError("Confirme la suppression.");
     await deleteEvent(userId, text(form, "id"), Number(text(form, "version")));
+    await removeEventFiles(text(form, "id"));
     return { redirectTo: "/?ok=supprime" };
   });
 }

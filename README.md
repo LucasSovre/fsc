@@ -269,6 +269,18 @@ sont stockés sous forme de hash, renouvelables et révocables. Les droits sont
 revérifiés à chaque lecture. Un téléphone ou destinataire peut cependant conserver
 une copie déjà téléchargée ; FSC ne contrôle pas sa fréquence d’actualisation.
 
+## Types, liens et billets
+
+Un événement peut avoir un type facultatif (spectacle, sortie, vacances, visio, travail), affiché en pastille
+et filtrable depuis le calendrier. Selon le type, le formulaire propose un lien (http/https) et des billets :
+PDF, PNG, JPEG ou WebP, 10 Mo et 10 fichiers au maximum par événement. Le lien figure dans l’export ICS
+(`URL`) et dans l’e-mail de rappel.
+
+Les billets sont stockés dans `UPLOAD_DIR` (volume Docker `uploads` monté sur `/data/uploads`) et servis
+uniquement aux personnes qui ont accès à l’événement. Les événements importés d’un calendrier lié n’ont ni
+type, ni lien, ni billet. La migration `event_types` ajoute `event.type`, `event.link` et la table
+`eventAttachment` (suppression en cascade) ; les données existantes sont inchangées.
+
 ## Calendriers externes liés
 
 Depuis **Calendrier → Lier un autre calendrier**, ou le menu du logo, ouvrir
@@ -495,6 +507,8 @@ PGHOST="${POSTGRES_HOST:-localhost}" PGPORT="${POSTGRES_PORT:-5432}" \
 PGUSER="$POSTGRES_USER" PGPASSWORD="$POSTGRES_PASSWORD" \
 pg_restore --no-owner --dbname="$POSTGRES_DB" fsc.dump
 ```
+
+Sauvegarder aussi le volume `uploads` (billets), par exemple avec `docker run --rm -v fsc_uploads:/data -v "$PWD":/backup alpine tar czf /backup/uploads.tgz -C /data .` (le nom du volume dépend du projet Compose).
 
 Restaurer aussi `BETTER_AUTH_SECRET` et les clés VAPID pour conserver la validité des
 sessions/clients chiffrés et abonnements push. Après restauration, exécuter les migrations

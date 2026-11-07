@@ -1,10 +1,11 @@
 import { Temporal } from "temporal-polyfill";
-import type { Event, EventReminderChoice, Profile, Tag } from "../../server/types";
+import type { Event, EventAttachment, EventReminderChoice, Profile, Tag } from "../../server/types";
 import { eventAction } from "../actions";
 import { ActionForm } from "./action-form";
 import { EventDates } from "./event-fields";
 import { EventReminderFields } from "./event-reminder-fields";
-export function EventForm({ event, zone, tags, canCommon, creator, day, reminder, reminderDefaults }: { event?: Event; zone: string; tags: Tag[]; canCommon: boolean; creator: boolean; day?: string; reminder?: EventReminderChoice; reminderDefaults: Pick<Profile, "reminderMinutes" | "emailEnabled" | "pushEnabled"> }) {
+import { EventTypeFields } from "./event-type-fields";
+export function EventForm({ event, attachments = [], zone, tags, canCommon, creator, day, reminder, reminderDefaults }: { event?: Event; attachments?: EventAttachment[]; zone: string; tags: Tag[]; canCommon: boolean; creator: boolean; day?: string; reminder?: EventReminderChoice; reminderDefaults: Pick<Profile, "reminderMinutes" | "emailEnabled" | "pushEnabled"> }) {
   const tz = event?.timeZone || zone;
   const start = event?.startsAt ? Temporal.Instant.from(event.startsAt.toISOString()).toZonedDateTimeISO(tz).toPlainDateTime()
     : day ? Temporal.PlainDate.from(day).toPlainDateTime("09:00") : Temporal.Now.zonedDateTimeISO(zone).toPlainDateTime().round({ smallestUnit: "hour", roundingMode: "ceil" });
@@ -23,6 +24,7 @@ export function EventForm({ event, zone, tags, canCommon, creator, day, reminder
     </fieldset>
     {event && <><input type="hidden" name="id" value={event.id} /><input type="hidden" name="version" value={event.version} /></>}
     <p><label>Titre <input name="title" required maxLength={300} defaultValue={event?.title} /></label></p>
+    <EventTypeFields eventId={event?.id} initialType={event?.type ?? null} link={event?.link ?? ""} attachments={attachments} />
     <EventDates initial={{ allDay: event?.allDay ?? false, start: start.toString({ smallestUnit: "minute" }), end: end.toString({ smallestUnit: "minute" }), startDate, endDate, timeZone: tz }} />
     <details className="form-more" open={!!event && !!(event.location || event.description || event.tags.length || reminder?.mode === "custom")}><summary>Plus d’options : lieu, description, tags, rappel</summary>
     <p><label>Lieu <input name="location" maxLength={500} defaultValue={event?.location} /></label></p>

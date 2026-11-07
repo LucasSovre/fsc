@@ -22,6 +22,7 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     PORT=3000
 RUN chown -R node:node .next
+RUN mkdir -p /data/uploads && chown node:node /data/uploads
 USER node
 EXPOSE 3000
 ENTRYPOINT ["bash", "scripts/entrypoint.sh"]

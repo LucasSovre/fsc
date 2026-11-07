@@ -5,8 +5,12 @@ export type Profile = {
   emailEnabled: boolean; pushEnabled: boolean;
   todoEmailEnabled: boolean;
 };
+export const eventTypes = ["spectacle", "sortie", "vacances", "visio", "travail"] as const;
+export type EventType = typeof eventTypes[number];
+export type EventAttachment = { id: string; eventId: string; name: string; mime: string; size: number };
 export type Event = {
   id: string; calendarId: string; creatorId: string; title: string; description: string; location: string;
+  type: EventType | null; link: string;
   allDay: boolean; startsAt: Date | null; endsAt: Date | null; startDate: string | null; endDate: string | null;
   timeZone: string; tags: string[]; version: number; createdAt: Date; updatedAt: Date;
   visibility: "solo" | "common";

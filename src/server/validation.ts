@@ -18,6 +18,8 @@ export const eventSchema = z.object({
   title: z.string().trim().min(1, "Le titre est obligatoire.").max(300),
   description: z.string().max(10_000).default(""),
   location: z.string().max(500).default(""),
+  type: z.enum(["spectacle", "sortie", "vacances", "visio", "travail"], { error: "Type d’événement inconnu." }).nullable().default(null),
+  link: z.string().trim().max(2000).default("").refine(value => !value || /^https?:\/\/\S+$/i.test(value), "Le lien doit commencer par http:// ou https://."),
   tags: z.array(z.string().trim().min(1).max(60)).max(30).default([]),
   temporalData: temporalSchema,
 });

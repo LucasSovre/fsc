@@ -3,11 +3,13 @@ import { Temporal } from "temporal-polyfill";
 import { requireUser } from "../../server/session";
 import { listEvents, settings } from "../../server/calendar";
 import { dayInstant, localDate } from "../../server/validation";
+import { eventTypes } from "../../server/types";
+import { typeLabels } from "../components/event-type";
 import { EventList } from "../components/event-list";
 import { MonthSwipe } from "../components/month-swipe";
 import { listTravelDays } from "../../server/travel";
 import { TravelCalendar, TravelForm } from "../components/travel-calendar";
-export default async function Page({ searchParams }: { searchParams: Promise<{ mois?: string; jour?: string; page?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ mois?: string; jour?: string; page?: string; type?: string }> }) {
   const user = await requireUser(), { profile } = await settings(user.id), query = await searchParams;
   const today = Temporal.Now.plainDateISO(profile.timeZone);
   let month = today.toPlainYearMonth(), selected = today;
@@ -32,6 +34,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
     }
   }
   const result = await listEvents(user.id, { from: dayInstant(day, profile.timeZone), to: dayInstant(selected.add({ days: 1 }).toString(), profile.timeZone), cursor: query.page });
+  const type = eventTypes.find(value => value === query.type);
+  const events = type ? result.events.filter(event => event.type === type) : result.events;
+  const typeHref = (value?: string) => `/calendrier?jour=${day}${value ? `&type=${value}` : ""}`;
   return <><h1>Calendrier</h1>
     <TravelCalendar key={user.id} userId={user.id} menu={<TravelForm day={day} />}>
     <div className="month-toolbar"><h2>{monthTitle}</h2>
@@ -60,8 +65,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
     <div className="day-heading"><h2>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`))}</h2>
       <Link className="button-link day-add" href={`/evenements/nouveau?jour=${day}`}>Créer<span className="sr-only"> un événement ce jour</span></Link></div>
     <div className="travel-detail">{travelDays.filter(travel => travel.day === day).map(travel => <p className="travel-person" key={travel.userId}>{travel.name} en déplacement</p>)}</div>
-    <EventList events={result.events} zone={profile.timeZone} />
-    {result.nextCursor && <p><Link href={`/calendrier?jour=${day}&page=${result.nextCursor}`}>Événements suivants de ce jour</Link></p>}
+    <nav className="type-filter" aria-label="Filtrer par type"><Link href={typeHref()} aria-current={type ? undefined : "true"}>Tous</Link>{eventTypes.map(value => <Link key={value} href={typeHref(value)} aria-current={type === value ? "true" : undefined}>{typeLabels[value]}</Link>)}</nav>
+    <EventList events={events} zone={profile.timeZone} />
+    {result.nextCursor && <p><Link href={`/calendrier?jour=${day}&page=${result.nextCursor}${type ? `&type=${type}` : ""}`}>Événements suivants de ce jour</Link></p>}
     </TravelCalendar>
   </>;
 }

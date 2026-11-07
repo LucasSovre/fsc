@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { localDate } from "../../server/validation";
+import { typeEmojis, typeLabels } from "./event-type";
 import type { Event } from "../../server/types";
 const noon = (date: string) => new Date(`${date}T12:00:00Z`);
 function dayLabel(date: string, withYear: boolean) {
@@ -24,7 +25,8 @@ export function EventList({ events, zone }: { events: Event[]; zone: string }) {
   return events.length ? <ul className="event-list">{events.map(event => <li className="event-card" data-visibility={event.visibility} key={event.id}>
     <p className="event-time">{eventWhen(event, zone)}</p>
     <Link className="event-title" href={`/evenements/${event.id}`}>{event.title}</Link>
-    <p className="event-meta"><strong className="event-visibility">{event.visibility === "common" ? "Commun" : "Solo"}</strong>{event.location && ` · ${event.location}`}</p>
+    <p className="event-meta"><strong className="event-visibility">{event.visibility === "common" ? "Commun" : "Solo"}</strong>{event.location && ` · ${event.location}`}{event.type && <> · <span className="event-type" data-type={event.type}><span aria-hidden="true">{typeEmojis[event.type]}</span> {typeLabels[event.type]}</span></>}</p>
+    {event.type === "visio" && event.link && <p><a className="button-link event-join" href={event.link} target="_blank" rel="noopener noreferrer">Rejoindre</a></p>}
     {event.tags.length > 0 && <p className="event-tags">Tags : {event.tags.join(", ")}</p>}
   </li>)}</ul> : <p className="empty-state">Aucun événement.</p>;
 }
