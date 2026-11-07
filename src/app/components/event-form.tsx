@@ -10,7 +10,7 @@ export function EventForm({ event, zone, tags, canCommon, creator, day, reminder
     : day ? Temporal.PlainDate.from(day).toPlainDateTime("09:00") : Temporal.Now.zonedDateTimeISO(zone).toPlainDateTime().round({ smallestUnit: "hour", roundingMode: "ceil" });
   const end = event?.endsAt ? Temporal.Instant.from(event.endsAt.toISOString()).toZonedDateTimeISO(tz).toPlainDateTime() : start.add({ hours: 1 });
   const startDate = event?.startDate || start.toPlainDate().toString();
-  const endDate = event?.endDate || Temporal.PlainDate.from(startDate).add({ days: 1 }).toString();
+  const endDate = event?.endDate ? Temporal.PlainDate.from(event.endDate).subtract({ days: 1 }).toString() : startDate;
   return <ActionForm action={eventAction}>
     <fieldset className="visibility-field"><legend>Qui peut voir cet événement ?</legend>
       <div className="visibility-options">

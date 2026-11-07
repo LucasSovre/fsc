@@ -7,8 +7,8 @@ export function EventDates({ initial }: { initial: { allDay: boolean; start: str
     <p><label><input type="checkbox" name="allDay" checked={allDay} onChange={e => setAllDay(e.target.checked)} /> Journée entière</label></p>
     {allDay ? <>
       <p><label>Premier jour <input type="date" name="startDate" defaultValue={initial.startDate} required /></label></p>
-      <p><label>Fin exclusive <input type="date" name="endDate" defaultValue={initial.endDate} required /></label></p>
-      <p>Pour une seule journée, choisis le lendemain comme fin.</p>
+      <p><label>Dernier jour (inclus) <input type="date" name="endDate" defaultValue={initial.endDate} required /></label></p>
+      <p className="field-help">Pour une seule journée, choisis la même date.</p>
     </> : <>
       <p><label>Début <input type="datetime-local" name="start" defaultValue={initial.start} required /></label></p>
       <p><label>Fin <input type="datetime-local" name="end" defaultValue={initial.end} required /></label></p>

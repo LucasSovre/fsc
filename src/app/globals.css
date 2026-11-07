@@ -106,7 +106,7 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 .event-title > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .event-arrow { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 50%; background: white; }
 .event-visibility { display: inline-block; margin-top: 12px; font-size: 12px; font-weight: 700; }
-.event-time { margin-top: 20px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.event-time { margin-top: 20px; font-size: 14px; font-variant-numeric: tabular-nums; }
 .event-tags { border-top: 1px solid #27272540; padding-top: 12px; margin-top: 12px; font-size: 12px; }
 .empty-state { border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 24px; color: var(--color-muted); }
 .calendar-create { margin: 0 0 24px; }
