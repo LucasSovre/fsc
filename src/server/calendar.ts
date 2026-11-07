@@ -203,7 +203,7 @@ export async function acceptInvitation(userId: string, token: string) {
   return transaction(async db => {
     const { user, profile } = await account(db, userId);
     const [invite] = await rows<{ id: string; email: string; calendarId: string }>(`SELECT * FROM invitation WHERE "tokenHash"=$1 AND "usedAt" IS NULL AND "revokedAt" IS NULL AND "expiresAt">now()`, [tokenHash(token)], db);
-    if (!invite || invite.email.toLowerCase() !== user.email.toLowerCase()) throw new DomainError("Invitation invalide, expirée ou destinée à une autre adresse.");
+    if (!invite || invite.email.toLowerCase() !== user.email.toLowerCase()) throw new DomainError("Invitation invalide ou expirée, ou destinée à une autre adresse. Connecte-toi avec l’adresse e-mail invitée.");
     if ((await rows('SELECT "userId" FROM member WHERE "userId"=$1', [userId], db)).length) throw new DomainError("Quitte ton calendrier commun actuel avant d’accepter.");
     const members = await rows('SELECT "userId" FROM member WHERE "calendarId"=$1', [invite.calendarId], db);
     if (members.length !== 1) throw new DomainError("Ce calendrier n’est plus disponible.");

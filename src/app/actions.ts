@@ -112,7 +112,7 @@ export async function inviteAction(_: ActionState, form: FormData) {
   });
 }
 export async function acceptInvitationAction(_: ActionState, form: FormData) {
-  return run(async userId => { await acceptInvitation(userId, text(form, "token")); return { redirectTo: "/" }; });
+  return run(async userId => { await acceptInvitation(userId, text(form, "token")); return { redirectTo: "/?ok=rejoint" }; });
 }
 export async function revokeInvitationAction(_: ActionState, form: FormData) {
   return run(async userId => { await revokeInvitation(userId, text(form, "id")); return { message: "Invitation révoquée." }; });
