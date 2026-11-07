@@ -1,0 +1,85 @@
+import { test, expect } from "@playwright/test";
+import { register, password, assertTestDatabase } from "../helpers";
+import { pool } from "../../src/server/database";
+import { acceptInvitation, createInvitation, listCalendars, rotateFeed, saveEvent } from "../../src/server/calendar";
+import { setTravelDays } from "../../src/server/travel";
+
+test.beforeAll(() => { assertTestDatabase(); });
+test.afterAll(async () => { await pool.end(); });
+
+test("déplacements sur mobile : saisie, couleur, clavier, persistance et ICS", async ({ page }, testInfo) => {
+  const a = await register("Alice"), b = await register("Bob");
+  const invitation = await createInvitation(a.id, b.email);
+  await acceptInvitation(b.id, invitation.url.split("/").at(-1)!);
+  await setTravelDays(b.id, { startDate: "2027-03-31", endDate: "2027-03-31" }, true);
+  await saveEvent(a.id, { visibility: "common", title: "Dîner ensemble", temporalData: { allDay: true, startDate: "2027-03-31", endDate: "2027-04-01" } });
+  await page.goto("/connexion");
+  await page.getByLabel("E-mail", { exact: true }).fill(a.email);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Se connecter", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "À venir" })).toBeVisible();
+  await page.goto("/calendrier?jour=2027-03-31");
+  const toggle = page.getByRole("switch", { name: "Afficher les déplacements" });
+  await expect(toggle).not.toBeChecked();
+  await page.getByText("Marquer un déplacement", { exact: true }).click();
+  await expect(page.getByLabel("Du", { exact: true })).toHaveValue("2027-03-31");
+  await page.getByLabel("Au (inclus)").fill("2027-04-02");
+  await page.getByRole("button", { name: "Marquer mes jours" }).click();
+  await expect(page.getByText("Tes jours de déplacement ont été enregistrés.")).toBeVisible();
+  await toggle.focus();
+  await page.keyboard.press("Space");
+  await expect(toggle).toBeChecked();
+  const selected = page.locator('.calendar-grid a[aria-current="date"]');
+  await expect(selected).toHaveCSS("background-color", "rgb(244, 212, 184)");
+  await expect(selected).toHaveAccessibleName(/Alice en déplacement.*Bob en déplacement/);
+  await expect(page.getByText("Alice en déplacement", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bob en déplacement", { exact: true })).toBeVisible();
+  await expect(page.getByText("Dîner ensemble", { exact: true })).toBeVisible();
+  await page.getByText("Marquer un déplacement", { exact: true }).click();
+  await page.getByText("Alice en déplacement", { exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("travel-mobile.png") });
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.screenshot({ path: testInfo.outputPath("travel-desktop.png"), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("link", { name: "Mois suivant", exact: true }).click();
+  await expect(toggle).toBeChecked();
+  await expect(page.locator('.calendar-grid a[data-travel="true"]')).toHaveCount(2);
+  await page.reload();
+  await expect(toggle).toBeChecked();
+  await toggle.uncheck();
+  await expect(page.locator('.calendar-grid a[aria-current="date"]')).not.toHaveCSS("background-color", "rgb(244, 212, 184)");
+  await page.reload();
+  await expect(toggle).not.toBeChecked();
+  await page.getByText("Marquer un déplacement", { exact: true }).click();
+  await page.getByLabel("Au (inclus)").fill("2027-04-02");
+  await page.getByRole("button", { name: "Retirer mon marquage" }).click();
+  await expect(page.getByText("Ton marquage a été retiré pour cette période.")).toBeVisible();
+  await expect(page.locator('.calendar-grid a[data-travel="true"]')).toHaveCount(0);
+  for (const calendar of await listCalendars(a.id)) {
+    const feed = await rotateFeed(a.id, calendar.id);
+    for (const url of [`/exports/${calendar.id}.ics`, feed]) {
+      const response = await page.request.get(url);
+      expect(response.ok()).toBe(true);
+      const ics = await response.text();
+      expect(ics).not.toContain("déplacement");
+      expect(ics.match(/BEGIN:VEVENT/g)?.length ?? 0).toBe(calendar.kind === "common" ? 1 : 0);
+    }
+  }
+  await toggle.check();
+  await page.getByRole("button", { name: "Ouvrir le menu du compte" }).click();
+  await page.getByRole("button", { name: "Se déconnecter" }).click();
+  await page.goto("/connexion");
+  await page.getByLabel("E-mail", { exact: true }).fill(b.email);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Se connecter", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "À venir" })).toBeVisible();
+  await page.goto("/calendrier?jour=2027-03-31");
+  await expect(toggle).not.toBeChecked();
+  await toggle.check();
+  await expect(page.getByText("Alice en déplacement", { exact: true })).toBeVisible();
+  await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException("Storage unavailable", "QuotaExceededError"); }; });
+  await toggle.uncheck();
+  await expect(toggle).not.toBeChecked();
+  await toggle.check();
+  await expect(toggle).toBeChecked();
+});

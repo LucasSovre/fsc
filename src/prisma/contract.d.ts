@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'37e5c8f0d65262c364067a164556bb44975a6a9cb3833bea79f593acb3d28de0'>;
+  StorageHashBase<'5f206f77d9f5d8ad9df5e71e498947e12c60d66e0c1580ed06e1039d5662e39a'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -672,6 +672,13 @@ export namespace Models {
     user: public_AuthUser;
     readonly [RelationKeys]?: 'user';
   };
+  export type public_TravelDay = {
+    day: FieldOutputTypes['public']['TravelDay']['day'];
+    id: FieldOutputTypes['public']['TravelDay']['id'];
+    userId: FieldOutputTypes['public']['TravelDay']['userId'];
+    user: public_AuthUser;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_WorkerHeartbeat = {
     id: FieldOutputTypes['public']['WorkerHeartbeat']['id'];
     updatedAt: FieldOutputTypes['public']['WorkerHeartbeat']['updatedAt'];
@@ -708,6 +715,7 @@ export declare const models: {
     Tag: Models.public_Tag;
     Todo: Models.public_Todo;
     TodoDigest: Models.public_TodoDigest;
+    TravelDay: Models.public_TravelDay;
     WorkerHeartbeat: Models.public_WorkerHeartbeat;
   };
 };
@@ -3221,6 +3229,52 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly travelDay: {
+              columns: {
+                readonly day: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId', 'day'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'travelDay_userId_idx_a489d58a';
+                  readonly prefix: 'travelDay_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'travelDay';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly user: {
               columns: {
                 readonly createdAt: {
@@ -3423,6 +3477,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'TodoDigest';
     };
+    readonly travelDay: { readonly namespace: 'public' & NamespaceId; readonly model: 'TravelDay' };
     readonly user: { readonly namespace: 'public' & NamespaceId; readonly model: 'AuthUser' };
     readonly verification: {
       readonly namespace: 'public' & NamespaceId;
@@ -5646,6 +5701,45 @@ type ContractBase = Omit<
                 readonly retryAt: { readonly column: 'retryAt' };
                 readonly sentAt: { readonly column: 'sentAt' };
                 readonly status: { readonly column: 'status' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
+          readonly TravelDay: {
+            readonly fields: {
+              readonly day: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AuthUser';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'travelDay';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly day: { readonly column: 'day' };
+                readonly id: { readonly column: 'id' };
                 readonly userId: { readonly column: 'userId' };
               };
             };

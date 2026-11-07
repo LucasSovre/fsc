@@ -386,6 +386,18 @@ Références : [Better Auth OAuth Provider](https://better-auth.com/docs/plugins
 [connexion Claude](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp),
 [Web Push sur iPhone](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/).
 
+## Jours en déplacement
+
+Dans Calendrier, « Marquer un déplacement » permet d’ajouter ou retirer ses propres
+jours, du début à la fin inclus (366 jours maximum). « Afficher les déplacements »
+colore les jours concernés en pêche et affiche les noms dans le détail du jour,
+sans masquer les événements. Ce choix est mémorisé par compte dans le navigateur.
+Les jours sont partagés uniquement avec le partenaire actuel du calendrier commun.
+Ils ne figurent ni dans les exports/abonnements ICS, ni dans les rappels ou le MCP.
+
+La migration `travel_days` doit être appliquée avec `bun run migrate` avant de
+servir cette version. Elle ajoute une table indépendante sans modifier les événements.
+
 ## Tests
 
 ```sh

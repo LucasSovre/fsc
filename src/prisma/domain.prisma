@@ -218,3 +218,12 @@ model WorkerHeartbeat {
   updatedAt DateTime
   @@map("workerHeartbeat")
 }
+
+model TravelDay {
+  id String @id
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day String
+  @@unique([userId, day])
+  @@map("travelDay")
+}

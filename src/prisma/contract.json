@@ -104,6 +104,10 @@
       "model": "TodoDigest",
       "namespace": "public"
     },
+    "travelDay": {
+      "model": "TravelDay",
+      "namespace": "public"
+    },
     "user": {
       "model": "AuthUser",
       "namespace": "public"
@@ -3662,6 +3666,64 @@
               "table": "todoDigest"
             }
           },
+          "TravelDay": {
+            "fields": {
+              "day": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AuthUser",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "day": {
+                  "column": "day"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "travelDay"
+            }
+          },
           "WorkerHeartbeat": {
             "fields": {
               "id": {
@@ -6778,6 +6840,70 @@
                 }
               ]
             },
+            "travelDay": {
+              "columns": {
+                "day": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "travelDay_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "travelDay"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "travelDay_userId_idx_a489d58a",
+                  "prefix": "travelDay_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId",
+                    "day"
+                  ]
+                }
+              ]
+            },
             "user": {
               "columns": {
                 "createdAt": {
@@ -6928,7 +7054,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "37e5c8f0d65262c364067a164556bb44975a6a9cb3833bea79f593acb3d28de0"
+    "storageHash": "5f206f77d9f5d8ad9df5e71e498947e12c60d66e0c1580ed06e1039d5662e39a"
   },
   "capabilities": {
     "postgres": {

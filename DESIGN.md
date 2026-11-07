@@ -9,6 +9,7 @@ colors:
   neutral: "#f1f1f1"
   common: "#d0e8b8"
   solo: "#aaa0d0"
+  travel: "#f4d4b8"
   border: "#d3d3ce"
   error: "#9d2929"
   focus: "#62528e"

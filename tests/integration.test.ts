@@ -1,3 +1,5 @@
+import { listTravelDays, setTravelDays, travelRange } from "../src/server/travel";
+import { calendarICS } from "../src/server/ics";
 import { afterAll, describe, expect, test } from "bun:test";
 import { randomUUID, createHash, randomBytes, createECDH } from "node:crypto";
 import { generateVAPIDKeys } from "web-push";
@@ -513,4 +515,45 @@ describe("FSC sur PostgreSQL", () => {
     expect((await rpc(partner.access_token, "tools/list")).response.ok).toBe(true);
     expect((await authRequest("/oauth2/token", { grant_type: "refresh_token", client_id: clientId, refresh_token: refreshed.refresh_token })).ok).toBe(false);
   }, 30000);
+});
+
+test("périodes civiles inclusives, années bissextiles et validation", () => {
+  expect(travelRange({ startDate: "2027-12-31", endDate: "2028-01-02" }).days).toEqual(["2027-12-31", "2028-01-01", "2028-01-02"]);
+  expect(travelRange({ startDate: "2028-02-28", endDate: "2028-03-01" }).days).toHaveLength(3);
+  for (const [startDate, endDate] of [["2027-02-29", "2027-03-01"], ["2027-01-02", "2027-01-01"], ["2027-01-01", "2028-01-02"], ["", "2027-01-01"]]) {
+    expect(() => travelRange({ startDate, endDate })).toThrow();
+  }
+});
+
+test("déplacements : isolation, chevauchements, retrait, fuseaux, ICS et départ", async () => {
+  const a = await register("Alice déplacement"), b = await register("Bob déplacement"), outsider = await register("Extérieur déplacement");
+  const range = { startDate: "2027-03-27", endDate: "2027-03-29" };
+  await setTravelDays(a.id, range, true);
+  await setTravelDays(a.id, range, true);
+  expect(await listTravelDays(b.id, range)).toEqual([]);
+  const invite = await createInvitation(a.id, b.email);
+  await acceptInvitation(b.id, invite.url.split("/").at(-1)!);
+  await setTravelDays(a.id, { startDate: "2027-03-28", endDate: "2027-03-30" }, true);
+  await setTravelDays(b.id, { startDate: "2027-03-28", endDate: "2027-03-28" }, true);
+  expect(await listTravelDays(b.id, range)).toHaveLength(4);
+  expect(await listTravelDays(outsider.id, range)).toEqual([]);
+  await expect(setTravelDays(b.id, { ...range, userId: a.id }, false)).rejects.toThrow();
+  await setTravelDays(b.id, range, false);
+  await setTravelDays(b.id, range, false);
+  expect((await listTravelDays(b.id, range)).map(row => row.day)).toEqual(["2027-03-27", "2027-03-28", "2027-03-29"]);
+  await rows('UPDATE profile SET "timeZone"=$2 WHERE "userId"=$1', [b.id, "Pacific/Honolulu"]);
+  expect((await listTravelDays(b.id, range)).map(row => row.day)).toEqual(["2027-03-27", "2027-03-28", "2027-03-29"]);
+  for (const calendar of await listCalendars(a.id)) {
+    const feed = await rotateFeed(a.id, calendar.id), token = feed.split("/").at(-1)!.replace(/\.ics$/, "");
+    for (const data of [await feedEvents(a.id, calendar.id), await feedEvents(a.id, calendar.id, token)]) {
+      expect(data.events).toEqual([]);
+      expect(calendarICS(data.calendar, data.events)).not.toContain("BEGIN:VEVENT");
+    }
+  }
+  expect(await rows('SELECT id FROM reminder WHERE "userId"=ANY($1::text[])', [[a.id, b.id]])).toEqual([]);
+  await setTravelDays(a.id, { startDate: "2027-03-28", endDate: "2027-03-28" }, false);
+  expect((await listTravelDays(b.id, range)).map(row => row.day)).toEqual(["2027-03-27", "2027-03-29"]);
+  await leaveCalendar(b.id);
+  expect(await listTravelDays(b.id, range)).toEqual([]);
+  expect(await listTravelDays(a.id, range)).toHaveLength(2);
 });

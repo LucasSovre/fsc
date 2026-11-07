@@ -6,6 +6,7 @@
   --color-neutral: #f1f1f1;
   --color-common: #d0e8b8;
   --color-solo: #aaa0d0;
+  --color-travel: #f4d4b8;
   --color-border: #d3d3ce;
   --color-error: #9d2929;
   --radius-card: 24px;
@@ -125,6 +126,16 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 .calendar-grid a[data-today="true"] { box-shadow: inset 0 0 0 2px #62528e; }
 .calendar-grid a[aria-current="date"] { background: var(--color-ink); color: white; }
 .calendar-grid a[aria-current="date"][data-today="true"] { box-shadow: inset 0 0 0 2px var(--color-solo); }
+.travel-form { margin-block: 16px 24px; }
+.travel-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.travel-toggle { display: flex; align-items: center; gap: 10px; }
+.travel-legend { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.travel-legend span { width: 16px; height: 16px; border-radius: 50%; background: var(--color-travel); }
+.travel-calendar[data-show-travel="false"] .travel-detail { display: none; }
+.travel-calendar[data-show-travel="true"] .calendar-grid a[data-travel="true"] { background: var(--color-travel); color: var(--color-ink); }
+.travel-calendar[data-show-travel="true"] .calendar-grid a[data-travel="true"][aria-current="date"] { outline: 2px solid var(--color-ink); outline-offset: 1px; }
+.travel-calendar[data-show-travel="true"] .calendar-grid a[data-travel="true"]:focus-visible { outline: 3px solid #62528e; outline-offset: 4px; }
+.travel-person { padding: 8px 14px; background: var(--color-travel); border-radius: var(--radius-field); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .visibility-field { padding: 0; border: 0; }
 .visibility-field legend { padding: 0; margin-bottom: 14px; }

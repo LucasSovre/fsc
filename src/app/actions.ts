@@ -9,6 +9,7 @@ import { addPushSubscription, removePushSubscription } from "../server/push";
 import { revokeConnection } from "../server/oauth";
 import { completeTodo, deleteTodo, saveTodo, saveTodoEmailPreference } from "../server/todo";
 import { addLinkedCalendar, removeLinkedCalendar, setLinkedCalendarEnabled, syncLinkedCalendar } from "../server/linked-calendars";
+import { setTravelDays } from "../server/travel";
 
 export type ActionState = { message?: string; error?: string; href?: string; redirectTo?: string; refresh?: boolean };
 async function run(work: (userId: string) => Promise<ActionState>): Promise<ActionState> {
@@ -21,6 +22,13 @@ async function run(work: (userId: string) => Promise<ActionState>): Promise<Acti
 }
 const text = (form: FormData, name: string) => String(form.get(name) ?? "");
 const checked = (form: FormData, name: string) => form.get(name) === "on";
+export async function travelAction(_: ActionState, form: FormData) {
+  return run(async userId => {
+    const marked = z.enum(["mark", "remove"]).parse(text(form, "operation")) === "mark";
+    await setTravelDays(userId, { startDate: text(form, "startDate"), endDate: text(form, "endDate") }, marked);
+    return { message: marked ? "Tes jours de déplacement ont été enregistrés." : "Ton marquage a été retiré pour cette période." };
+  });
+}
 function eventReminderInput(form: FormData) {
   const mode = text(form, "eventReminderMode");
   if (mode !== "custom") return { mode };
