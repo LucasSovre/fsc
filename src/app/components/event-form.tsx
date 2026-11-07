@@ -13,6 +13,7 @@ export function EventForm({ event, zone, tags, canCommon, creator, day, reminder
   const endDate = event?.endDate ? Temporal.PlainDate.from(event.endDate).subtract({ days: 1 }).toString() : startDate;
   return <ActionForm action={eventAction}>
     <fieldset className="visibility-field"><legend>Qui peut voir cet événement ?</legend>
+      <p className="field-help">Choisis Solo ou Commun pour continuer.</p>
       <div className="visibility-options">
         <label className="visibility-option visibility-solo"><input type="radio" name="visibility" value="solo" required defaultChecked={event?.visibility === "solo"} disabled={!!event && !creator && event.visibility !== "solo"} /><span>Solo<span className="sr-only"> — visible uniquement par toi</span></span><svg className="visibility-check" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9" /><path d="m6 10 3 3 5-6" /></svg></label>
         <label className="visibility-option visibility-common"><input type="radio" name="visibility" value="common" required defaultChecked={event?.visibility === "common"} disabled={!canCommon || (!!event && !creator && event.visibility !== "common")} /><span>Commun<span className="sr-only"> — visible et modifiable par vous deux</span></span><svg className="visibility-check" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9" /><path d="m6 10 3 3 5-6" /></svg></label>

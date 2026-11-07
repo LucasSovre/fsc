@@ -151,6 +151,7 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 .visibility-option:has(input:checked) { border-color: var(--color-ink); }
 .visibility-solo:has(input:checked), .visibility-solo:hover:not(:has(input:disabled)) { background: var(--color-solo); }
 .visibility-common:has(input:checked), .visibility-common:hover:not(:has(input:disabled)) { background: var(--color-common); }
+.visibility-option:has(input:user-invalid) { border-color: var(--color-error); }
 .visibility-option:has(input:focus-visible) { outline: 3px solid #62528e; outline-offset: 4px; }
 .visibility-option:has(input:disabled) { cursor: not-allowed; color: var(--color-muted); background: var(--color-neutral); border-color: var(--color-border); }
 .visibility-check { display: none; flex-shrink: 0; }
