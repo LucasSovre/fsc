@@ -1,63 +1,27 @@
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-
-  const { listUsers } = await import("../prisma/users");
-  const formatter = new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
+import Link from "next/link";
+import { requireUser } from "../server/session";
+import { listEvents, settings } from "../server/calendar";
+import { EventList } from "./components/event-list";
+import { localDate } from "../server/validation";
+export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const user = await requireUser();
+  const { profile } = await settings(user.id);
+  const { page } = await searchParams;
+  const now = new Date();
+  const result = await listEvents(user.id, { from: now, to: new Date(now.getTime() + 365 * 86400_000), cursor: page });
+  const today = localDate(now, profile.timeZone);
+  const groups = Map.groupBy(result.events, event => {
+    const date = event.allDay ? event.startDate! : localDate(event.startsAt!, profile.timeZone);
+    return date < today ? today : date;
   });
-  const users = await listUsers(10).catch((error: unknown) => {
-    console.error("Failed to query users:", error);
-    return undefined;
-  });
-
-  return (
-    <main className="shell">
-      <div className="hero">
-        <p className="eyebrow">Next.js + Prisma 8</p>
-
-        <h1>Users from your database, loaded on the server.</h1>
-        <p className="lede">
-          This page reads from <code>src/app/page.tsx</code> using the Prisma 8 helper in{" "}
-          <code>src/prisma/users.ts</code>.
-        </p>
-      </div>
-
-      <section className="panel">
-        <div className="panelHeader">
-          <h2>Seeded users</h2>
-          <span>{users?.length ?? 0} total</span>
-        </div>
-
-        {!users ? (
-          <p className="empty">
-            Could not query users. Check the server log for the error. If the schema isn&apos;t
-            applied yet, run <code>contract:emit</code> and apply it, then refresh.
-          </p>
-        ) : users.length === 0 ? (
-          <p className="empty">No users found.</p>
-        ) : (
-          <ul className="users">
-            {users.map((user) => (
-              <li key={user.id}>
-                <div>
-                  <strong>{user.name ?? "Unnamed user"}</strong>
-                  <p>{user.username ? `@${user.username}` : user.email}</p>
-                </div>
-                {user.createdAt ? (
-                  <time dateTime={user.createdAt}>
-                    {formatter.format(new Date(user.createdAt))}
-                  </time>
-                ) : (
-                  <span className="empty">No timestamp</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-    </main>
-  );
+  return <><h1>À venir</h1><p><Link href="/evenements/nouveau">Créer un événement</Link></p>
+    <p>Événements en cours et à venir sur les douze prochains mois, communs et solo. Fuseau : {profile.timeZone}.</p>
+    {!result.events.length && <p>Aucun événement à venir.</p>}
+    {[...groups].map(([day, events]) => <section key={day}>
+      <h2>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`))}</h2>
+      <EventList events={events} zone={profile.timeZone} />
+    </section>)}
+    {result.nextCursor && <p><Link href={`/?page=${result.nextCursor}`}>Événements suivants</Link></p>}
+    {page && <p><Link href="/">Revenir au début</Link></p>}
+  </>;
 }

@@ -8,3 +8,5 @@ next-env.d.ts
 *.tsbuildinfo
 /.alchemy
 /.prisma-composer
+/playwright-report/
+/test-results/

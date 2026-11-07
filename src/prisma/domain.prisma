@@ -1,0 +1,150 @@
+model Catalog {
+  id String @id
+  @@map("catalog")
+}
+
+model Calendar {
+  id String @id
+  kind String
+  ownerId String? @unique
+  owner AuthUser? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  catalogId String
+  catalog Catalog @relation(fields: [catalogId], references: [id])
+  createdAt DateTime @default(now())
+  @@check(expression: sql`kind IN ('solo', 'common') AND ((kind = 'solo' AND "ownerId" IS NOT NULL) OR (kind = 'common' AND "ownerId" IS NULL))`, name: "calendar_kind")
+  @@map("calendar")
+}
+
+model Profile {
+  userId String @id
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendarId String @unique
+  calendar Calendar @relation(fields: [calendarId], references: [id])
+  catalogId String
+  catalog Catalog @relation(fields: [catalogId], references: [id])
+  timeZone String @default("Europe/Paris")
+  reminderMinutes Int @default(30)
+  emailEnabled Boolean @default(false)
+  pushEnabled Boolean @default(false)
+  reminderMode String @default("all")
+  selectedTags String[] @default([])
+  @@check(expression: sql`"reminderMinutes" >= 0 AND "reminderMinutes" <= 525600 AND "reminderMode" IN ('all', 'tags')`, name: "profile_preferences")
+  @@map("profile")
+}
+
+model Member {
+  userId String @id
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendarId String
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  @@index([calendarId])
+  @@map("member")
+}
+
+model Invitation {
+  id String @id
+  tokenHash String @unique
+  calendarId String
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  inviterId String
+  inviter AuthUser @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  email String
+  expiresAt DateTime
+  usedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([calendarId])
+  @@map("invitation")
+}
+
+model Tag {
+  id String @id
+  catalogId String
+  catalog Catalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  key String
+  label String
+  @@unique([catalogId, key])
+  @@map("tag")
+}
+
+model Event {
+  id String @id
+  calendarId String
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator AuthUser @relation(fields: [creatorId], references: [id])
+  title String
+  description String @default("")
+  location String @default("")
+  allDay Boolean
+  startsAt DateTime?
+  endsAt DateTime?
+  startDate String?
+  endDate String?
+  timeZone String
+  tags String[] @default([])
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  @@index([calendarId, startsAt])
+  @@index([calendarId, startDate])
+  @@check(expression: sql`( "allDay" AND "startDate" IS NOT NULL AND "endDate" > "startDate" AND "startsAt" IS NULL AND "endsAt" IS NULL ) OR (NOT "allDay" AND "startsAt" IS NOT NULL AND "endsAt" > "startsAt" AND "startDate" IS NULL AND "endDate" IS NULL)`, name: "event_dates")
+  @@map("event")
+}
+
+model Feed {
+  id String @id
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendarId String
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  tokenHash String @unique
+  createdAt DateTime @default(now())
+  @@unique([userId, calendarId])
+  @@map("feed")
+}
+
+model PushSubscription {
+  id String @id
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint String @unique
+  subscription Json
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@map("pushSubscription")
+}
+
+model Reminder {
+  id String @id
+  eventId String
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel String
+  dueAt DateTime
+  referenceAt DateTime
+  status String @default("pending")
+  attempts Int @default(0)
+  sentAt DateTime?
+  @@unique([eventId, userId, channel])
+  @@index([status, dueAt])
+  @@check(expression: sql`channel IN ('email', 'push') AND status IN ('pending', 'dispatching', 'sent', 'cancelled', 'uncertain', 'failed')`, name: "reminder_state")
+  @@map("reminder")
+}
+
+model Delivery {
+  id String @id
+  reminderId String
+  reminder Reminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  destination String
+  status String
+  @@unique([reminderId, destination])
+  @@map("delivery")
+}
+
+model WorkerHeartbeat {
+  id String @id
+  updatedAt DateTime
+  @@map("workerHeartbeat")
+}

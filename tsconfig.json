@@ -15,7 +15,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "types": [
-      "node"
+      "node", "bun"
     ],
     "plugins": [
       {
@@ -34,5 +34,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".agents", ".claude", ".cursor", ".devin"]
 }

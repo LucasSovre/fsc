@@ -18,6 +18,11 @@ FROM source AS migrate
 USER node
 CMD ["node", "node_modules/prisma/dist/prisma.js", "db", "migrate", "--no-interactive"]
 
+FROM source AS worker
+ENV NODE_ENV=production
+USER node
+CMD ["node", "--import", "tsx", "scripts/worker.ts"]
+
 FROM source AS builder
 RUN mkdir -p public && bun run build
 

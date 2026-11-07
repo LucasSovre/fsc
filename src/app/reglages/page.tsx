@@ -1,0 +1,45 @@
+import { requireUser } from "../../server/session";
+import { settings } from "../../server/calendar";
+import { rows } from "../../server/database";
+import { ActionForm } from "../components/action-form";
+import { feedAction, inviteAction, leaveAction, preferencesAction, revokeInvitationAction } from "../actions";
+import { PushSettings } from "../components/push-settings";
+import { ZoneInput } from "../components/event-fields";
+export default async function Page() {
+  const user = await requireUser(), state = await settings(user.id), p = state.profile;
+  const feeds = await rows<{ calendarId: string }>('SELECT "calendarId" FROM feed WHERE "userId"=$1', [user.id]);
+  return <><h1>Réglages</h1>
+    <h2>Mes rappels</h2><p>Ces préférences s’appliquent à tes événements solo et aux événements communs, uniquement pour toi.</p>
+    <ActionForm action={preferencesAction}>
+      <p><ZoneInput initial={p.timeZone} /></p>
+      <p><label>Délai avant l’événement (minutes) <input name="reminderMinutes" type="number" min={0} max={525600} defaultValue={p.reminderMinutes} required /></label></p>
+      <p>Pour une journée entière, le délai est calculé avant 9 h le premier jour, dans ton fuseau.</p>
+      <fieldset><legend>Canaux</legend>
+        <p><label><input type="checkbox" name="emailEnabled" defaultChecked={p.emailEnabled} /> E-mail</label></p>
+        <p><label><input type="checkbox" name="pushEnabled" defaultChecked={p.pushEnabled} /> Notifications web</label></p>
+      </fieldset>
+      <fieldset><legend>Quels événements ?</legend>
+        <p><label><input type="radio" name="reminderMode" value="all" defaultChecked={p.reminderMode === "all"} /> Tous les événements, y compris sans tag</label></p>
+        <p><label><input type="radio" name="reminderMode" value="tags" defaultChecked={p.reminderMode === "tags"} /> Tags sélectionnés</label></p>
+        {state.tags.map(tag => <p key={tag.key}><label><input type="checkbox" name="selectedTags" value={tag.key} defaultChecked={p.selectedTags.includes(tag.key)} /> {tag.label}</label></p>)}
+        <p>Un seul tag correspondant suffit. Un événement qui porte plusieurs tags choisis ne déclenche qu’un rappel par canal. Sans tag sélectionné, ce mode n’envoie aucun rappel.</p>
+      </fieldset><button>Enregistrer mes réglages</button>
+    </ActionForm>
+    <PushSettings publicKey={process.env.VAPID_PUBLIC_KEY || ""} />
+    <section><h2>Calendrier commun</h2>
+      {state.members.length ? <ul>{state.members.map(m => <li key={m.email}>{m.name} · {m.email}</li>)}</ul> : <p>Tu n’as pas encore de calendrier commun.</p>}
+      {state.members.length < 2 && <ActionForm action={inviteAction}><p><label>E-mail de la personne à inviter <input name="email" type="email" required /></label></p><button>Inviter à partager mon calendrier</button></ActionForm>}
+      {state.invitations.map(i => <ActionForm action={revokeInvitationAction} key={i.id}><input type="hidden" name="id" value={i.id} /><p>Invitation à {i.email}, expire le {i.expiresAt.toLocaleDateString("fr-FR", { timeZone: p.timeZone })}.</p><button>Révoquer cette invitation</button></ActionForm>)}
+      {state.members.length > 0 && <ActionForm action={leaveAction}><p>En quittant, tu perds l’accès aux événements communs et leurs rappels. L’autre personne conserve le calendrier.</p><p><label><input type="checkbox" name="confirm" required /> Je confirme mon départ.</label></p><button>Quitter le calendrier commun</button></ActionForm>}
+    </section>
+    <section><h2>Calendriers du téléphone</h2><p>Exporte un fichier ou abonne-toi séparément à chaque agenda. Le téléphone choisit la fréquence d’actualisation et peut conserver des copies déjà téléchargées.</p><p>Le lien d’abonnement donne accès à cet agenda : conserve-le comme un secret. Renouvelle-le si tu l’as partagé par erreur.</p>
+      {state.calendars.map(c => <section key={c.id}><h3>{c.kind === "solo" ? "Solo" : "Commun"}</h3>
+        <p><a href={`/exports/${c.id}.ics`}>Télécharger le fichier .ics</a></p>
+        <ActionForm action={feedAction}><input type="hidden" name="calendarId" value={c.id} />
+          <p><button name="operation" value="rotate">Créer ou renouveler le lien d’abonnement</button></p>
+          <p><button name="operation" value="revoke" disabled={!feeds.some(f => f.calendarId === c.id)}>Révoquer le lien d’abonnement</button></p>
+        </ActionForm>
+      </section>)}
+    </section>
+  </>;
+}

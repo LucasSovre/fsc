@@ -6,6 +6,13 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   globalIgnores([
+    ".agents/**",
+    ".claude/**",
+    ".cursor/**",
+    ".devin/**",
+    "playwright-report/**",
+    "test-results/**",
+    "public/sw.js",
     ".next/**",
     ".prisma-composer/**",
     "out/**",

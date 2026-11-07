@@ -1,0 +1,242 @@
+import { afterAll, describe, expect, test } from "bun:test";
+import { randomUUID, createHash, randomBytes, createECDH } from "node:crypto";
+import { generateVAPIDKeys } from "web-push";
+import { pool, rows } from "../src/server/database";
+import { acceptInvitation, createInvitation, deleteEvent, feedEvents, getEvent, leaveCalendar, listCalendars, listEvents, revokeFeed, rotateFeed, saveEvent, savePreferences, settings } from "../src/server/calendar";
+import { recoverInterrupted, tick, type Sender } from "../src/server/worker";
+import { handleMCP } from "../src/server/mcp";
+import { auth } from "../src/server/auth";
+import { addPushSubscription } from "../src/server/push";
+import { revokeConnection } from "../src/server/oauth";
+import { baseURL, mcpResource } from "../src/server/config";
+import { assertTestDatabase, authRequest, register, password } from "./helpers";
+
+assertTestDatabase();
+afterAll(async () => { await pool.end(); });
+const future = () => ({ allDay: false as const, start: new Date(Date.now() + 20 * 60000).toISOString(), end: new Date(Date.now() + 80 * 60000).toISOString(), timeZone: "Europe/Paris" });
+const tokenFrom = (url: string) => url.split("/").at(-1)!.replace(/\.ics$/, "");
+const range = () => ({ from: new Date(Date.now() - 86400_000), to: new Date(Date.now() + 86400_000) });
+async function rpc(token: string, method: string, params: unknown = {}, id = 1) {
+  const response = await handleMCP(new Request(`${baseURL}/mcp`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json, text/event-stream", "MCP-Protocol-Version": "2025-11-25" }, body: JSON.stringify({ jsonrpc: "2.0", id, method, params }) }));
+  return { response, body: response.headers.get("content-type")?.includes("json") ? await response.json() : null };
+}
+describe("FSC sur PostgreSQL", () => {
+  test("adresse vérifiée obligatoire et réinitialisation du mot de passe à usage unique", async () => {
+    const email = `${randomUUID()}@fsc.test`;
+    expect((await authRequest("/sign-up/email", { name: "Non vérifié", email, password })).ok).toBe(true);
+    expect((await authRequest("/sign-in/email", { email, password })).ok).toBe(false);
+    const user = await register("Mot de passe");
+    expect((await authRequest("/request-password-reset", { email: user.email, redirectTo: `${baseURL}/nouveau-mot-de-passe` })).ok).toBe(true);
+    const mailbox = process.env.MAILPIT_URL || "http://127.0.0.1:18025";
+    const messages = await fetch(`${mailbox}/api/v1/search?query=${encodeURIComponent(`to:${user.email}`)}`).then(r => r.json()) as { messages: { ID: string; Subject: string }[] };
+    const resetMessage = messages.messages.find(m => m.Subject.includes("nouveau mot de passe"))!;
+    expect(resetMessage).toBeDefined();
+    const body = await fetch(`${mailbox}/api/v1/message/${resetMessage.ID}`).then(r => r.json()) as { Text: string };
+    const link = body.Text.match(/https?:\/\/[^\s]+/)![0];
+    const redirect = await auth.handler(new Request(link));
+    const resetToken = new URL(redirect.headers.get("location")!, baseURL).searchParams.get("token")!;
+    const newPassword = "FSC-new-test-password-123456!";
+    expect((await authRequest("/reset-password", { token: resetToken, newPassword })).ok).toBe(true);
+    expect((await authRequest("/sign-in/email", { email: user.email, password })).ok).toBe(false);
+    expect((await authRequest("/sign-in/email", { email: user.email, password: newPassword })).ok).toBe(true);
+    expect((await authRequest("/reset-password", { token: resetToken, newPassword })).ok).toBe(false);
+  }, 30000);
+  test("partage, isolation, conflits, ICS, filtres personnels, annulation et départ", async () => {
+    const a = await register("Alice"), b = await register("Bob"), outsider = await register("Extérieur");
+    const invitation = await createInvitation(a.id, b.email), invitationToken = tokenFrom(invitation.url);
+    await expect(acceptInvitation(outsider.id, invitationToken)).rejects.toThrow();
+    const attempts = await Promise.allSettled([acceptInvitation(b.id, invitationToken), acceptInvitation(b.id, invitationToken)]);
+    expect(attempts.filter(r => r.status === "fulfilled")).toHaveLength(1);
+    await expect(acceptInvitation(outsider.id, invitationToken)).rejects.toThrow();
+    const common = (await listCalendars(a.id)).find(c => c.kind === "common")!;
+    const soloA = (await listCalendars(a.id)).find(c => c.kind === "solo")!;
+    const shared = await saveEvent(a.id, { calendarId: common.id, visibility: "common", title: "Dîner", temporalData: future(), tags: ["Famille", "Important", " FAMILLE "] });
+    expect(shared.tags).toHaveLength(2);
+    const solo = await saveEvent(a.id, { visibility: "solo", title: "Privé", temporalData: future(), tags: ["Privé"] });
+    expect((await getEvent(b.id, shared.id)).title).toBe("Dîner");
+    await expect(getEvent(b.id, solo.id)).rejects.toThrow();
+    await expect(getEvent(outsider.id, shared.id)).rejects.toThrow();
+    expect((await listEvents(b.id, range())).events.map(e => e.id)).not.toContain(solo.id);
+    await expect(saveEvent(a.id, { visibility: "common", calendarId: soloA.id, title: "Incohérent", temporalData: future() })).rejects.toThrow();
+    const updated = await saveEvent(b.id, { visibility: "common", title: "Dîner à deux", temporalData: future(), tags: shared.tags }, { id: shared.id, version: shared.version });
+    await expect(saveEvent(a.id, { visibility: "common", title: "Version périmée", temporalData: future() }, { id: shared.id, version: shared.version })).rejects.toThrow();
+    await expect(saveEvent(b.id, { visibility: "solo", title: "Interdit", temporalData: future() }, { id: shared.id, version: updated.version, confirmVisibility: true })).rejects.toThrow();
+    const ownFeed = await rotateFeed(a.id, soloA.id);
+    expect((await feedEvents(a.id, soloA.id, tokenFrom(ownFeed))).events.map(e => e.id)).toContain(solo.id);
+    await expect(feedEvents(b.id, soloA.id)).rejects.toThrow();
+    await rotateFeed(a.id, soloA.id);
+    await expect(feedEvents(a.id, soloA.id, tokenFrom(ownFeed))).rejects.toThrow();
+    await revokeFeed(a.id, soloA.id);
+    const prefs = { timeZone: "Europe/Paris", reminderMinutes: 30, emailEnabled: true, pushEnabled: false, reminderMode: "tags", selectedTags: ["famille"] };
+    await savePreferences(a.id, prefs);
+    await savePreferences(b.id, { ...prefs, selectedTags: ["important"] });
+    const mail: string[] = [];
+    const sender: Sender = { email: async to => { mail.push(to); }, push: async () => {} };
+    await tick(sender);
+    expect(mail.filter(v => v === a.email)).toHaveLength(1);
+    expect(mail.filter(v => v === b.email)).toHaveLength(1);
+    await tick(sender);
+    expect(mail.filter(to => to === a.email || to === b.email)).toHaveLength(2);
+    const rescheduled = await saveEvent(a.id, { visibility: "common", title: "Replanifié", temporalData: future(), tags: ["Famille"] });
+    expect((await rows('SELECT id FROM reminder WHERE "eventId"=$1 AND status=\'pending\'', [rescheduled.id])).length).toBe(1);
+    await savePreferences(a.id, { ...prefs, reminderMinutes: 0 });
+    const [job] = await rows<{ dueAt: Date }>('SELECT "dueAt" FROM reminder WHERE "eventId"=$1 AND "userId"=$2', [rescheduled.id, a.id]);
+    expect(job.dueAt.getTime()).toBe(rescheduled.startsAt!.getTime());
+    await deleteEvent(b.id, rescheduled.id, rescheduled.version);
+    expect((await rows('SELECT id FROM reminder WHERE "eventId"=$1', [rescheduled.id])).length).toBe(0);
+    const sharedLink = await rotateFeed(b.id, common.id);
+    const moved = await saveEvent(a.id, { visibility: "solo", title: "Dîner privé", temporalData: future(), tags: ["Famille"] }, { id: updated.id, version: updated.version, confirmVisibility: true });
+    await expect(getEvent(b.id, moved.id)).rejects.toThrow();
+    expect((await feedEvents(b.id, common.id, tokenFrom(sharedLink))).events.map(e => e.id)).not.toContain(moved.id);
+    await leaveCalendar(b.id);
+    await expect(feedEvents(b.id, common.id, tokenFrom(sharedLink))).rejects.toThrow();
+    expect((await settings(b.id)).tags.some(t => t.key === "famille")).toBe(true);
+    expect((await listCalendars(a.id)).some(c => c.id === common.id)).toBe(true);
+    const capacity = await createInvitation(a.id, outsider.email);
+    await acceptInvitation(outsider.id, tokenFrom(capacity.url));
+    await expect(createInvitation(a.id, b.email)).rejects.toThrow();
+  }, 30000);
+
+  test("reprise du worker : échecs explicites réessayés, résultat incertain jamais rejoué", async () => {
+    const a = await register("Rappels");
+    const event = await saveEvent(a.id, { visibility: "solo", title: "Rappel", temporalData: future() });
+    await savePreferences(a.id, { timeZone: "UTC", reminderMinutes: 30, emailEnabled: true, pushEnabled: false, reminderMode: "all", selectedTags: [] });
+    let sends = 0;
+    await tick({ email: async to => { if (to === a.email) { sends++; throw Object.assign(new Error(), { responseCode: 451 }); } }, push: async () => {} });
+    expect(sends).toBe(1);
+    expect((await rows<{ status: string }>('SELECT status FROM reminder WHERE "eventId"=$1', [event.id]))[0].status).toBe("pending");
+    await pool.query('UPDATE reminder SET "dueAt"=now() WHERE "eventId"=$1', [event.id]);
+    await tick({ email: async to => { if (to === a.email) { sends++; throw Object.assign(new Error(), { code: "ETIMEDOUT" }); } }, push: async () => {} }, new Date(Date.now() + 1000));
+    expect(sends).toBe(2);
+    await recoverInterrupted();
+    await tick({ email: async to => { if (to === a.email) sends++; }, push: async () => {} });
+    expect(sends).toBe(2);
+    expect((await rows<{ status: string }>('SELECT status FROM reminder WHERE "eventId"=$1', [event.id]))[0].status).toBe("uncertain");
+  }, 30000);
+
+  test("rappel à l’heure de début et abandon d’un rappel réellement périmé", async () => {
+    const a = await register("À l’heure");
+    const event = await saveEvent(a.id, { visibility: "solo", title: "Début", temporalData: future() });
+    await savePreferences(a.id, { timeZone: "UTC", reminderMinutes: 0, emailEnabled: true, pushEnabled: false, reminderMode: "all", selectedTags: [] });
+    let count = 0;
+    const sender: Sender = { email: async to => { if (to === a.email) count++; }, push: async () => {} };
+    await tick(sender, new Date(event.startsAt!.getTime() + 5000));
+    expect(count).toBe(1);
+    const late = await saveEvent(a.id, { visibility: "solo", title: "Périmé", temporalData: future() });
+    await tick(sender, new Date(late.startsAt!.getTime() + 120000));
+    expect(count).toBe(1);
+    expect((await rows<{ status: string }>('SELECT status FROM reminder WHERE "eventId"=$1', [late.id]))[0].status).toBe("cancelled");
+  }, 30000);
+
+  test("notifications web, déduplication par canal, tags modifiés et perte d’accès", async () => {
+    const a = await register("Push"), b = await register("Autres préférences");
+    const invitation = await createInvitation(a.id, b.email);
+    await acceptInvitation(b.id, tokenFrom(invitation.url));
+    const vapid = generateVAPIDKeys();
+    process.env.VAPID_PUBLIC_KEY = vapid.publicKey; process.env.VAPID_PRIVATE_KEY = vapid.privateKey;
+    const ecdh = createECDH("prime256v1"); ecdh.generateKeys();
+    const endpoint = `https://fcm.googleapis.com/fsc-test/${randomUUID()}`;
+    await addPushSubscription(a.id, { endpoint, keys: { p256dh: ecdh.getPublicKey().toString("base64url"), auth: randomBytes(16).toString("base64url") } });
+    const prefs = { timeZone: "UTC", reminderMinutes: 30, emailEnabled: true, pushEnabled: false, reminderMode: "tags", selectedTags: ["famille"] };
+    const event = await saveEvent(a.id, { visibility: "common", title: "Titre privé dans FSC", temporalData: future(), tags: ["Famille", "Important"] });
+    await savePreferences(a.id, { ...prefs, pushEnabled: true, selectedTags: ["famille", "important"] });
+    await savePreferences(b.id, { ...prefs, selectedTags: ["important"] });
+    let emailCount = 0, pushCount = 0;
+    const sender: Sender = { email: async to => { if (to === a.email) emailCount++; }, push: async (subscription, payload) => { if (subscription.endpoint === endpoint) { pushCount++; expect(payload).not.toContain(event.title); } } };
+    await tick(sender); await tick(sender);
+    expect(emailCount).toBe(1); expect(pushCount).toBe(1);
+    const pending = await saveEvent(a.id, { visibility: "common", title: "À replanifier", temporalData: future(), tags: ["Famille"] });
+    const changed = await saveEvent(a.id, { visibility: "common", title: pending.title, temporalData: future(), tags: ["Important"] }, { id: pending.id, version: pending.version });
+    const jobs = await rows<{ userId: string; status: string }>('SELECT "userId",status FROM reminder WHERE "eventId"=$1', [changed.id]);
+    expect(jobs.some(j => j.userId === b.id && j.status === "pending")).toBe(true);
+    await leaveCalendar(b.id);
+    expect((await rows<{ status: string }>('SELECT status FROM reminder WHERE "eventId"=$1 AND "userId"=$2', [changed.id, b.id]))[0].status).toBe("cancelled");
+    await tick({ email: async () => {}, push: async () => { throw Object.assign(new Error(), { statusCode: 410 }); } });
+    expect((await rows('SELECT id FROM "pushSubscription" WHERE endpoint=$1', [endpoint])).length).toBe(0);
+    const late = await createInvitation(a.id, b.email);
+    await pool.query('UPDATE invitation SET "expiresAt"=now()-interval \'1 second\' WHERE id=$1', [late.id]);
+    await expect(acceptInvitation(b.id, tokenFrom(late.url))).rejects.toThrow();
+    await expect(addPushSubscription(a.id, { endpoint: "https://127.0.0.1/private", keys: { p256dh: ecdh.getPublicKey().toString("base64url"), auth: randomBytes(16).toString("base64url") } })).rejects.toThrow();
+  }, 30000);
+
+  test("OAuth réel local : PKCE, consentement, MCP, scopes, refresh et révocation", async () => {
+    const a = await register("OAuth"), b = await register("Partenaire OAuth");
+    const invitation = await createInvitation(a.id, b.email); await acceptInvitation(b.id, tokenFrom(invitation.url));
+    const solo = (await listCalendars(a.id)).find(c => c.kind === "solo")!;
+    const common = (await listCalendars(a.id)).find(c => c.kind === "common")!;
+    // A test client is persisted locally. Production clients are discovered by CIMD.
+    const clientId = `fsc-test-${randomUUID()}`, redirectUri = "https://client.example/callback";
+    const context = await auth.$context;
+    await context.adapter.create({ model: "oauthClient", data: { clientId, name: "Test client", redirectUris: [redirectUri], tokenEndpointAuthMethod: "none", grantTypes: ["authorization_code", "refresh_token"], responseTypes: ["code"], scopes: ["calendar:read", "event:create", "offline_access"], requirePKCE: true, disabled: false, createdAt: new Date(), updatedAt: new Date() } });
+    await context.adapter.create({ model: "oauthClientResource", data: { clientId, resourceId: mcpResource, createdAt: new Date() } });
+    const verifier = randomBytes(32).toString("base64url");
+    const challenge = createHash("sha256").update(verifier).digest("base64url");
+    const query = new URLSearchParams({ client_id: clientId, response_type: "code", redirect_uri: redirectUri, scope: "calendar:read event:create offline_access", state: randomUUID(), code_challenge: challenge, code_challenge_method: "S256", resource: mcpResource });
+    const missing = new URLSearchParams(query); missing.delete("code_challenge"); missing.delete("code_challenge_method");
+    const noPKCE = await authRequest(`/oauth2/authorize?${missing}`, undefined, a.cookie);
+    expect(noPKCE.status >= 400 || noPKCE.headers.get("location")?.includes("error=")).toBeTruthy();
+    const authorization = await authRequest(`/oauth2/authorize?${query}`, undefined, a.cookie);
+    const location = authorization.headers.get("location");
+    if (!location) throw new Error(`Autorisation : ${authorization.status} ${await authorization.text()}`);
+    const consentQuery = new URL(location, baseURL).search.slice(1);
+    expect(location).toContain("/consentement");
+    const consent = await authRequest("/oauth2/consent", { accept: true, oauth_query: consentQuery }, a.cookie);
+    const consentData = await consent.json() as { url: string };
+    if (!consent.ok) throw new Error(`Consentement : ${JSON.stringify(consentData)}`);
+    let code = new URL(consentData.url).searchParams.get("code")!;
+    const bad = await authRequest("/oauth2/token", { grant_type: "authorization_code", client_id: clientId, code, code_verifier: "wrong-verifier", redirect_uri: redirectUri, resource: mcpResource });
+    expect(bad.ok).toBe(false);
+    // The provider consumes a code even after a failed verifier. Obtain a new
+    // code; replaying the failed one must never be the success path.
+    const again = await authRequest(`/oauth2/authorize?${query}`, undefined, a.cookie);
+    let next = new URL(again.headers.get("location")!, baseURL);
+    if (next.pathname === "/consentement") {
+      const accepted = await authRequest("/oauth2/consent", { accept: true, oauth_query: next.search.slice(1) }, a.cookie);
+      next = new URL((await accepted.json() as { url: string }).url);
+    }
+    code = next.searchParams.get("code")!;
+    const exchange = await authRequest("/oauth2/token", { grant_type: "authorization_code", client_id: clientId, code, code_verifier: verifier, redirect_uri: redirectUri, resource: mcpResource });
+    const tokens = await exchange.json() as { access_token: string; refresh_token: string };
+    if (!exchange.ok) throw new Error(`Échange : ${JSON.stringify(tokens)}`);
+    expect(tokens.access_token).toBeString();
+    expect((await rpc(tokens.access_token, "initialize", { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "test", version: "1" } })).response.ok).toBe(true);
+    const listed = await rpc(tokens.access_token, "tools/call", { name: "list_calendars", arguments: {} });
+    expect(listed.body.result.isError).not.toBe(true);
+    const invalid = await rpc(tokens.access_token, "tools/call", { name: "create_event", arguments: { calendarId: common.id, title: "Sans visibilité", temporalData: future() } });
+    expect(invalid.body.result.isError).toBe(true);
+    const created = await rpc(tokens.access_token, "tools/call", { name: "create_event", arguments: { calendarId: common.id, visibility: "common", title: "Depuis MCP", tags: ["Famille"], temporalData: future() } });
+    expect(created.body.result.isError).not.toBe(true);
+    const event = JSON.parse(created.body.result.content[0].text);
+    expect((await getEvent(b.id, event.id)).title).toBe("Depuis MCP");
+    const privateCreated = await rpc(tokens.access_token, "tools/call", { name: "create_event", arguments: { calendarId: solo.id, visibility: "solo", title: "Solo MCP", temporalData: future() } });
+    const privateEvent = JSON.parse(privateCreated.body.result.content[0].text);
+    await expect(getEvent(b.id, privateEvent.id)).rejects.toThrow();
+    async function grant(cookie: string, scope: string) {
+      const requestQuery = new URLSearchParams(query); requestQuery.set("scope", scope); requestQuery.set("state", randomUUID());
+      const authorized = await authRequest(`/oauth2/authorize?${requestQuery}`, undefined, cookie);
+      let redirect = new URL(authorized.headers.get("location")!, baseURL);
+      if (redirect.pathname === "/consentement") {
+        const accepted = await authRequest("/oauth2/consent", { accept: true, oauth_query: redirect.search.slice(1) }, cookie);
+        redirect = new URL((await accepted.json() as { url: string }).url);
+      }
+      const result = await authRequest("/oauth2/token", { grant_type: "authorization_code", client_id: clientId, code: redirect.searchParams.get("code")!, code_verifier: verifier, redirect_uri: redirectUri, resource: mcpResource });
+      if (!result.ok) throw new Error(`Autorisation de test : ${await result.text()}`);
+      return await result.json() as { access_token: string; refresh_token?: string };
+    }
+    const readOnly = await grant(a.cookie, "calendar:read");
+    const forbidden = await rpc(readOnly.access_token, "tools/call", { name: "create_event", arguments: { calendarId: solo.id, visibility: "solo", title: "Refusé", temporalData: future() } });
+    expect(forbidden.body.result.isError).toBe(true);
+    const partner = await grant(b.cookie, "calendar:read");
+    const privateRead = await rpc(partner.access_token, "tools/call", { name: "list_events", arguments: { calendarId: solo.id, from: range().from.toISOString(), to: range().to.toISOString() } });
+    expect(privateRead.body.result.isError).toBe(true);
+    await pool.query('UPDATE "oauthAccessToken" SET "expiresAt"=now()-interval \'1 second\' WHERE "userId"=$1 AND "clientId"=$2', [a.id, clientId]);
+    expect((await rpc(readOnly.access_token, "tools/list")).response.status).toBe(401);
+    const refresh = await authRequest("/oauth2/token", { grant_type: "refresh_token", client_id: clientId, refresh_token: tokens.refresh_token, resource: mcpResource });
+    expect(refresh.ok).toBe(true);
+    const refreshed = await refresh.json() as { access_token: string; refresh_token: string };
+    await revokeConnection(a.id, clientId);
+    expect((await rpc(refreshed.access_token, "tools/list")).response.status).toBe(401);
+    expect((await rpc(partner.access_token, "tools/list")).response.ok).toBe(true);
+    expect((await authRequest("/oauth2/token", { grant_type: "refresh_token", client_id: clientId, refresh_token: refreshed.refresh_token })).ok).toBe(false);
+  }, 30000);
+});

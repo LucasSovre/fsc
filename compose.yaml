@@ -1,3 +1,17 @@
+x-fsc-environment: &fsc-environment
+  DATABASE_URL: postgresql://${POSTGRES_USER:-fsc}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-fsc}
+  BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Set the public HTTPS URL in .env}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a random secret of at least 32 characters}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:-FSC <fsc@example.com>}
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+  VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@example.com}
+
 services:
   db:
     image: postgres:17-bookworm
@@ -30,13 +44,42 @@ services:
       context: .
       target: runner
     restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-fsc}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-fsc}
+    environment: *fsc-environment
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
     depends_on:
       migrate:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  worker:
+    build:
+      context: .
+      target: worker
+    restart: unless-stopped
+    environment: *fsc-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "--import", "tsx", "scripts/worker-health.ts"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  mailpit:
+    image: axllent/mailpit:v1.27.0
+    command: ["--smtp-disable-rdns"]
+    profiles: ["mailpit"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
 
 volumes:
   postgres_data:
