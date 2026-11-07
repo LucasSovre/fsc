@@ -14,11 +14,11 @@ const authErrors: Record<string, string> = {
 };
 
 export function AuthForm({ mode }: { mode: "connexion" | "oubli" | "nouveau" }) {
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(""), [failed, setFailed] = useState(false);
   const [pending, setPending] = useState(false);
   const ready = useHydrated();
   async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setPending(true); setMessage("");
+    e.preventDefault(); setPending(true); setMessage(""); setFailed(false);
     const form = new FormData(e.currentTarget), email = String(form.get("email") || ""), password = String(form.get("password") || "");
     try {
       document.cookie = `fsc_timezone=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Paris")}; Path=/; SameSite=Lax; Max-Age=31536000${window.location.protocol === "https:" ? "; Secure" : ""}`;
@@ -28,11 +28,11 @@ export function AuthForm({ mode }: { mode: "connexion" | "oubli" | "nouveau" }) 
       const result = mode === "connexion" ? await authClient.signIn.email({ email, password, callbackURL })
         : mode === "oubli" ? await authClient.requestPasswordReset({ email, redirectTo: `${window.location.origin}/nouveau-mot-de-passe` })
         : await authClient.resetPassword({ newPassword: password, token: params.get("token") || "" });
-      if (result.error) setMessage(authErrors[result.error.code || ""] || "Impossible de terminer cette demande. Vérifie les informations ou réessaie dans un instant.");
+      if (result.error) { setFailed(true); setMessage(authErrors[result.error.code || ""] || "Impossible de terminer cette demande. Vérifie les informations ou réessaie dans un instant."); }
       else if (mode === "connexion") window.location.assign(result.data && "url" in result.data && typeof result.data.url === "string" ? result.data.url : callbackURL);
       else if (mode === "oubli") setMessage("Si ce compte existe, un lien de réinitialisation a été envoyé.");
       else setMessage("Mot de passe enregistré. Tu peux te connecter.");
-    } catch { setMessage("Connexion impossible. Réessaie dans un instant."); }
+    } catch { setFailed(true); setMessage("Connexion impossible. Réessaie dans un instant."); }
     finally { setPending(false); }
   }
   return <form onSubmit={submit}>
@@ -43,6 +43,6 @@ export function AuthForm({ mode }: { mode: "connexion" | "oubli" | "nouveau" }) 
       {mode !== "connexion" && mode !== "oubli" && <p>Au moins 12 caractères.</p>}
       <button type="submit">{pending ? "En cours…" : mode === "connexion" ? "Se connecter" : "Envoyer"}</button>
     </fieldset>
-    <p role="status">{message}</p>
+    <p role="status">{failed ? "" : message}</p>{failed && <p role="alert">{message}</p>}
   </form>;
 }
