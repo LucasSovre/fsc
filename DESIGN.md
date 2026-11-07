@@ -194,7 +194,7 @@ Action principale anthracite, texte blanc, hauteur minimale de 48 px. Le survol 
 
 ### Cards / Containers
 
-Les cartes d'événement utilisent la couleur de visibilité, un titre cliquable et une flèche SVG dans un disque blanc de 40 px. La visibilité est aussi écrite ; les horaires emploient des chiffres tabulaires. Les tags sont du texte derrière un séparateur, pas des chips. L'état vide est blanc, bordé et arrondi.
+Les cartes d'événement utilisent la couleur de visibilité, un titre dont le lien couvre toute la carte, l'horaire en tête. La visibilité est aussi écrite ; les horaires emploient des chiffres tabulaires. Les tags sont du texte derrière un séparateur, pas des chips. L'état vide est blanc, bordé et arrondi.
 
 ### Inputs / Fields
 

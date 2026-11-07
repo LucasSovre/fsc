@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Icon } from "./ui-icon";
 import { localDate } from "../../server/validation";
 import type { Event } from "../../server/types";
 const noon = (date: string) => new Date(`${date}T12:00:00Z`);
@@ -23,8 +22,9 @@ function eventWhen(event: Event, zone: string) {
 }
 export function EventList({ events, zone }: { events: Event[]; zone: string }) {
   return events.length ? <ul className="event-list">{events.map(event => <li className="event-card" data-visibility={event.visibility} key={event.id}>
-    <Link className="event-title" href={`/evenements/${event.id}`}><span>{event.title}</span><span className="event-arrow"><Icon name="arrow" /></span></Link><strong className="event-visibility">{event.visibility === "common" ? "Commun" : "Solo"}</strong><div className="event-time">
-    {eventWhen(event, zone)}
-    </div>{event.tags.length > 0 && <p className="event-tags">Tags : {event.tags.join(", ")}</p>}
+    <p className="event-time">{eventWhen(event, zone)}</p>
+    <Link className="event-title" href={`/evenements/${event.id}`}>{event.title}</Link>
+    <p className="event-meta"><strong className="event-visibility">{event.visibility === "common" ? "Commun" : "Solo"}</strong>{event.location && ` · ${event.location}`}</p>
+    {event.tags.length > 0 && <p className="event-tags">Tags : {event.tags.join(", ")}</p>}
   </li>)}</ul> : <p className="empty-state">Aucun événement.</p>;
 }
