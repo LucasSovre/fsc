@@ -15,9 +15,9 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const rights = event.linkedCalendarId ? "Cet événement est mis à jour depuis un calendrier lié. Pour le modifier ou le supprimer, utilise le calendrier source. Ton rappel personnel reste modifiable ci-dessous." : event.visibility === "common" ? "Vous pouvez tous les deux modifier et supprimer cet événement." : "Cet événement est privé. Toi seul peux le consulter et le modifier.";
   return <><h1>{event.title}</h1><Notice code={ok} /><EventList events={[event]} zone={event.timeZone} />
     <p><Link className="button-link" href={event.linkedCalendarId ? "/calendriers-lies" : `/evenements/${event.id}/modifier`}>{event.linkedCalendarId ? "Voir les calendriers liés" : "Modifier"}</Link></p>
-    {event.location && <p>Lieu : {event.location}</p>}{event.description.split("\n").map((line, i) => <p key={i}>{line}</p>)}
+    {event.description.split("\n").map((line, i) => <p key={i}>{line}</p>)}
     <p className="field-help">{rights}</p>
-    <details><summary>Mon rappel pour cet événement</summary>
+    <details><summary>Rappel personnel</summary>
     <ActionForm action={eventReminderAction}>
       <input type="hidden" name="eventId" value={event.id} />
       <EventReminderFields initial={reminder} defaults={profile} />
