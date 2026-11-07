@@ -6,15 +6,17 @@ import { TodoForm } from "../components/todo-form";
 import { TodoList } from "../components/todo-list";
 import { ActionForm } from "../components/action-form";
 import { todoEmailAction } from "../actions";
+import { Notice } from "../components/notice";
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  const { ok } = await searchParams;
   const user = await requireUser();
   const { todos, profile } = await listTodos(user.id), { calendars } = await settings(user.id);
   const today = localDate(new Date(), profile.timeZone);
   const late = todos.filter(todo => !todo.completedAt && todo.dueDate && todo.dueDate < today);
   const pending = todos.filter(todo => !todo.completedAt && (!todo.dueDate || todo.dueDate >= today));
   const completed = todos.filter(todo => todo.completedAt);
-  return <><h1>Todo</h1>
+  return <><h1>Todo</h1><Notice code={ok} />
     <p className="page-intro">Tes tâches personnelles et communes, avec leurs échéances.</p>
     <details className="todo-add"><summary>Ajouter une tâche</summary><TodoForm canCommon={calendars.some(calendar => calendar.kind === "common")} /></details>
     <details><summary>Récapitulatif quotidien par e-mail</summary>

@@ -145,7 +145,7 @@ export async function todoAction(_: ActionState, form: FormData) {
   return run(async userId => {
     await saveTodo(userId, { title: text(form, "title"), visibility: text(form, "visibility"), dueDate: text(form, "dueDate") || null },
       form.has("id") ? { id: text(form, "id"), version: Number(text(form, "version")) } : undefined);
-    return form.has("id") ? { message: "Tâche enregistrée." } : { redirectTo: "/todo" };
+    return form.has("id") ? { message: "Tâche enregistrée." } : { redirectTo: "/todo?ok=ajoutee" };
   });
 }
 export async function todoStatusAction(_: ActionState, form: FormData) {
