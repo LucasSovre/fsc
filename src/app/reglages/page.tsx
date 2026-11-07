@@ -1,16 +1,18 @@
 import Link from "next/link";
+import { listUsers } from "../../server/admin";
+import { apiKeyScopes, listApiKeys } from "../../server/api-keys";
 import { isAdmin, requireUser } from "../../server/session";
 import { getSmtpSummary } from "../../server/smtp";
 import { settings } from "../../server/calendar";
 import { rows } from "../../server/database";
 import { ActionForm } from "../components/action-form";
-import { createApiKeyAction, revokeApiKeyAction, feedAction, inviteAction, leaveAction, preferencesAction, revokeInvitationAction, smtpAction, smtpTestAction } from "../actions";
+import { createApiKeyAction, feedAction, inviteAction, leaveAction, preferencesAction, resendVerificationAction, revokeApiKeyAction, revokeInvitationAction, smtpAction, smtpTestAction, verifyUserAction } from "../actions";
 import { PushSettings } from "../components/push-settings";
 import { ZoneInput } from "../components/event-fields";
 export default async function Page() {
   const user = await requireUser(), state = await settings(user.id), p = state.profile;
   const feeds = await rows<{ calendarId: string }>('SELECT "calendarId" FROM feed WHERE "userId"=$1', [user.id]);
-  const admin = await isAdmin(user.id), smtp = { admin, config: admin ? await getSmtpSummary() : null };
+  const admin = await isAdmin(user.id), smtp = { admin, config: admin ? await getSmtpSummary() : null }, users = admin ? await listUsers(user.id) : [], apiKeys = await listApiKeys(user.id);
   return <><h1>Réglages</h1>
     <h2>Mes rappels</h2><p>Ces préférences s’appliquent à tes événements solo et aux événements communs, uniquement pour toi.</p>
     <ActionForm action={preferencesAction}>
@@ -79,5 +81,12 @@ export default async function Page() {
         <button disabled={!smtp.config}>Tester le SMTP</button>
       </ActionForm>
     </details></section>}
+    {smtp.admin && <section><h2>Comptes</h2><p>Vérifie une adresse à la main ou renvoie l’e-mail de vérification.</p>
+      <ul>{users.map(u => <li key={u.id}><strong>{u.name}</strong> ({u.email}) — {u.emailVerified ? "adresse vérifiée" : "adresse non vérifiée"}
+        {!u.emailVerified && <>
+          <ActionForm action={verifyUserAction}><input type="hidden" name="userId" value={u.id} /><button>Marquer comme vérifiée<span className="sr-only"> ({u.email})</span></button></ActionForm>
+          <ActionForm action={resendVerificationAction}><input type="hidden" name="userId" value={u.id} /><button>Renvoyer l’e-mail de vérification<span className="sr-only"> ({u.email})</span></button></ActionForm>
+        </>}</li>)}</ul>
+    </section>}
   </>;
 }

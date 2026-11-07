@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { looksLikeApiKey } from "../src/server/api-keys";
 import { buildOpenApi } from "../src/server/api/openapi";
 import { matchOperation, operations } from "../src/server/api/routes";
 import { captureTools, toolScopes } from "../src/server/api/tools";
@@ -27,5 +28,15 @@ describe("API REST : parité avec les outils MCP", () => {
     expect(list.parameters?.map(p => p.name)).toEqual(expect.arrayContaining(["from", "to"]));
     expect(doc.paths["/events/{eventId}"].delete.parameters?.map(p => p.name)).toEqual(["eventId", "version"]);
     expect(doc.paths["/events"].post.requestBody).toBeDefined();
+  });
+  test("le document accepte la clé d’API en en-tête", async () => {
+    const doc = await buildOpenApi() as { components: { securitySchemes: { apiKey: unknown } }; paths: Record<string, Record<string, { security: unknown[] }>> };
+    expect(doc.components.securitySchemes.apiKey).toMatchObject({ type: "apiKey", in: "header", name: "X-API-Key" });
+    expect(doc.paths["/todos"].get.security).toContainEqual({ apiKey: [] });
+  });
+  test("format des clés d’API", () => {
+    expect(looksLikeApiKey(`fsc_${"a".repeat(43)}`)).toBe(true);
+    expect(looksLikeApiKey("fsc_court")).toBe(false);
+    expect(looksLikeApiKey("a".repeat(47))).toBe(false);
   });
 });

@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Temporal } from "temporal-polyfill";
-import { assertAdmin, sendSmtpTest } from "../server/admin";
+import { assertAdmin, markEmailVerified, resendVerification, sendSmtpTest } from "../server/admin";
 import { createApiKey, revokeApiKey } from "../server/api-keys";
 import { requireUser } from "../server/session";
 import { saveSmtpConfig } from "../server/smtp";
@@ -110,6 +110,12 @@ export async function createApiKeyAction(_: ActionState, form: FormData) {
 }
 export async function revokeApiKeyAction(_: ActionState, form: FormData) {
   return run(async userId => { await revokeApiKey(userId, text(form, "id")); return { message: "Clé révoquée." }; });
+}
+export async function verifyUserAction(_: ActionState, form: FormData) {
+  return run(async userId => ({ message: `Adresse ${await markEmailVerified(userId, text(form, "userId"))} marquée comme vérifiée.` }));
+}
+export async function resendVerificationAction(_: ActionState, form: FormData) {
+  return run(async userId => ({ message: `E-mail de vérification envoyé à ${await resendVerification(userId, text(form, "userId"))}.` }));
 }
 export async function inviteAction(_: ActionState, form: FormData) {
   return run(async userId => {

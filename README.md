@@ -116,6 +116,13 @@ docker compose exec app node --import tsx scripts/create-account.ts --email admi
 
 Pour promouvoir un compte existant : même commande avec `--email` et `--admin` seulement.
 
+Vérifier une adresse à la main, ou renvoyer l’e-mail de vérification (`--resend`) :
+
+```sh
+docker compose exec app node --import tsx scripts/verify-account.ts --email alice@example.com
+docker compose exec app node --import tsx scripts/verify-account.ts --email alice@example.com --resend
+```
+
 ### HTTPS et proxy
 
 Pointer le proxy sur `127.0.0.1:3000`, conserver les chemins et les méthodes HTTP, et
@@ -429,20 +436,27 @@ pour ce compte ; les connexions de l’autre membre restent valides.
 
 ### API REST
 
-Chaque outil MCP a son équivalent REST sous `/api/v1`, avec les mêmes jetons OAuth
-(`Authorization: Bearer …`, audience `/mcp`), les mêmes scopes et les mêmes règles
-métier. La spécification OpenAPI 3.1, générée à partir des schémas des outils (elle ne
+Chaque outil MCP a son équivalent REST sous `/api/v1`, avec les mêmes scopes et les
+mêmes règles métier. L’authentification se fait par **clé d’API** (en-tête `X-API-Key`,
+voir ci-dessous) ou par jeton OAuth (`Authorization: Bearer …`, audience `/mcp`). La spécification OpenAPI 3.1, générée à partir des schémas des outils (elle ne
 peut donc pas diverger), est publique : `GET /api/v1/openapi.json`.
 
 - `GET` et `DELETE` : les champs d’entrée passent en paramètres de requête ; `POST` et `PUT` : corps JSON.
 - Les identifiants de ressource sont dans le chemin (`/events/{eventId}`). Pour modifier ou supprimer, passer la `version` lue (conflit : 409).
 - Les suppressions et révocations n’exigent pas `confirm` : l’appel explicite vaut confirmation.
 - Erreurs : `{ "error": "message" }` avec le statut HTTP (400, 401, 403, 404, 409).
-- Exemple : `curl -H "Authorization: Bearer $TOKEN" "https://TON-DOMAINE/api/v1/events?from=2027-01-01T00:00:00%2B01:00&to=2027-02-01T00:00:00%2B01:00"`.
+- Exemple OAuth : `curl -H "Authorization: Bearer $TOKEN" "https://TON-DOMAINE/api/v1/events?from=2027-01-01T00:00:00%2B01:00&to=2027-02-01T00:00:00%2B01:00"`.
 
-L’obtention d’un jeton passe par le fournisseur OAuth existant : les inscriptions
-dynamiques de clients restent désactivées, un client doit donc être autorisé (identité
-CIMD) comme pour Claude.
+**Clés d’API** : Réglages → Clés d’API. Chaque clé appartient à un compte, porte les
+autorisations (scopes) choisies à sa création (`admin` réservé aux administrateurs),
+s’affiche une seule fois et se révoque à tout moment ; seul son hash SHA-256 est stocké
+(20 clés maximum par compte). Elle n’est acceptée que sur `/api/v1` : `/mcp` reste en
+OAuth. Exemple : `curl -H "X-API-Key: fsc_…" https://TON-DOMAINE/api/v1/todos`.
+La migration `api_keys` crée la table : appliquer `bun run migrate` avant de redémarrer.
+
+Les jetons OAuth passent par le fournisseur existant : les inscriptions dynamiques de
+clients restent désactivées, un client doit donc être autorisé (identité CIMD) comme
+pour Claude.
 
 Références : [Better Auth OAuth Provider](https://better-auth.com/docs/plugins/oauth-provider),
 [connexion Claude](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp),
