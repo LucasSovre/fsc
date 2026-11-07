@@ -2,16 +2,16 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Temporal } from "temporal-polyfill";
-import { assertAdmin, requireUser } from "../server/session";
-import { rows } from "../server/database";
+import { assertAdmin, sendSmtpTest } from "../server/admin";
+import { requireUser } from "../server/session";
 import { saveSmtpConfig } from "../server/smtp";
-import { acceptInvitation, createInvitation, deleteEvent, leaveCalendar, revokeFeed, revokeInvitation, rotateFeed, saveEvent, saveEventReminder, savePreferences } from "../server/calendar";
+import { acceptInvitation, deleteEvent, leaveCalendar, revokeFeed, revokeInvitation, rotateFeed, saveEvent, saveEventReminder, savePreferences } from "../server/calendar";
 import { errorMessage, DomainError } from "../server/validation";
-import { sendMail, testSmtp } from "../server/mail";
+import { inviteByMail } from "../server/invitation-mail";
 import { addPushSubscription, removePushSubscription } from "../server/push";
 import { revokeConnection } from "../server/oauth";
 import { completeTodo, deleteTodo, saveTodo, saveTodoEmailPreference } from "../server/todo";
-import { addLinkedCalendar, removeLinkedCalendar, setLinkedCalendarEnabled, syncLinkedCalendar } from "../server/linked-calendars";
+import { addAndSyncLinkedCalendar, removeLinkedCalendar, setLinkedCalendarEnabled, syncLinkedCalendar } from "../server/linked-calendars";
 import { setTravelDays } from "../server/travel";
 
 export type ActionState = { message?: string; error?: string; href?: string; redirectTo?: string; refresh?: boolean };
@@ -95,19 +95,12 @@ export async function smtpAction(_: ActionState, form: FormData) {
   });
 }
 export async function smtpTestAction() {
-  return run(async userId => {
-    await assertAdmin(userId);
-    const [user] = await rows<{ email: string }>('SELECT email FROM "user" WHERE id=$1', [userId]);
-    try { await testSmtp(user.email); }
-    catch (error) { throw new DomainError(`Le test SMTP a échoué : ${error instanceof Error ? error.message : "erreur inconnue"}`); }
-    return { message: `E-mail de test envoyé à ${user.email}.` };
-  });
+  return run(async userId => ({ message: `E-mail de test envoyé à ${await sendSmtpTest(userId)}.` }));
 }
 export async function inviteAction(_: ActionState, form: FormData) {
   return run(async userId => {
-    const invitation = await createInvitation(userId, text(form, "email"));
-    try { await sendMail(invitation.email, "FSC — invitation à partager un calendrier", `Rejoins notre calendrier commun : ${invitation.url}\nCe lien est valable sept jours et réservé à ${invitation.email}.`); }
-    catch { return { message: "Invitation créée. L’e-mail n’a pas pu être envoyé ; tu peux transmettre ce lien à la personne invitée.", href: invitation.url }; }
+    const invitation = await inviteByMail(userId, text(form, "email"));
+    if (!invitation.mailed) return { message: "Invitation créée. L’e-mail n’a pas pu être envoyé ; tu peux transmettre ce lien à la personne invitée.", href: invitation.url };
     return { message: "Invitation envoyée, valable sept jours.", href: invitation.url };
   });
 }
@@ -169,9 +162,8 @@ export async function todoEmailAction(_: ActionState, form: FormData) {
 }
 export async function linkedCalendarAction(_: ActionState, form: FormData) {
   return run(async userId => {
-    const id = await addLinkedCalendar(userId, { name: text(form, "name"), url: text(form, "url"), visibility: text(form, "visibility") });
-    try { await syncLinkedCalendar(id, undefined, new Date(), userId); }
-    catch { return { message: "Calendrier lié ajouté. La première actualisation a échoué : consulte son état ci-dessous puis réessaie." }; }
+    const { synced } = await addAndSyncLinkedCalendar(userId, { name: text(form, "name"), url: text(form, "url"), visibility: text(form, "visibility") });
+    if (!synced) return { message: "Calendrier lié ajouté. La première actualisation a échoué : consulte son état ci-dessous puis réessaie." };
     return { message: "Calendrier lié ajouté et actualisé." };
   });
 }

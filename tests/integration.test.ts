@@ -444,11 +444,11 @@ describe("FSC sur PostgreSQL", () => {
     // A test client is persisted locally. Production clients are discovered by CIMD.
     const clientId = `fsc-test-${randomUUID()}`, redirectUri = "https://client.example/callback";
     const context = await auth.$context;
-    await context.adapter.create({ model: "oauthClient", data: { clientId, name: "Test client", redirectUris: [redirectUri], tokenEndpointAuthMethod: "none", grantTypes: ["authorization_code", "refresh_token"], responseTypes: ["code"], scopes: ["calendar:read", "event:create", "offline_access"], requirePKCE: true, disabled: false, createdAt: new Date(), updatedAt: new Date() } });
+    await context.adapter.create({ model: "oauthClient", data: { clientId, name: "Test client", redirectUris: [redirectUri], tokenEndpointAuthMethod: "none", grantTypes: ["authorization_code", "refresh_token"], responseTypes: ["code"], scopes: ["calendar:read", "event:write", "todo:write", "settings:write", "linked:write", "travel:write", "admin", "offline_access"], requirePKCE: true, disabled: false, createdAt: new Date(), updatedAt: new Date() } });
     await context.adapter.create({ model: "oauthClientResource", data: { clientId, resourceId: mcpResource, createdAt: new Date() } });
     const verifier = randomBytes(32).toString("base64url");
     const challenge = createHash("sha256").update(verifier).digest("base64url");
-    const query = new URLSearchParams({ client_id: clientId, response_type: "code", redirect_uri: redirectUri, scope: "calendar:read event:create offline_access", state: randomUUID(), code_challenge: challenge, code_challenge_method: "S256", resource: mcpResource });
+    const query = new URLSearchParams({ client_id: clientId, response_type: "code", redirect_uri: redirectUri, scope: "calendar:read event:write todo:write settings:write linked:write travel:write admin offline_access", state: randomUUID(), code_challenge: challenge, code_challenge_method: "S256", resource: mcpResource });
     const missing = new URLSearchParams(query); missing.delete("code_challenge"); missing.delete("code_challenge_method");
     const noPKCE = await authRequest(`/oauth2/authorize?${missing}`, undefined, a.cookie);
     expect(noPKCE.status >= 400 || noPKCE.headers.get("location")?.includes("error=")).toBeTruthy();
@@ -488,6 +488,53 @@ describe("FSC sur PostgreSQL", () => {
     const privateCreated = await rpc(tokens.access_token, "tools/call", { name: "create_event", arguments: { calendarId: solo.id, visibility: "solo", title: "Solo MCP", temporalData: future() } });
     const privateEvent = JSON.parse(privateCreated.body.result.content[0].text);
     await expect(getEvent(b.id, privateEvent.id)).rejects.toThrow();
+    const call = async (name: string, args: unknown, token = tokens.access_token) => {
+      const { body } = await rpc(token, "tools/call", { name, arguments: args });
+      return { error: body.result.isError === true, data: body.result.isError ? body.result.content[0].text as string : JSON.parse(body.result.content[0].text) };
+    };
+    const names = ((await rpc(tokens.access_token, "tools/list")).body.result.tools as { name: string }[]).map(t => t.name);
+    for (const tool of ["get_event", "update_event", "delete_event", "set_event_reminder", "export_ics", "list_todos", "create_todo", "update_todo", "set_todo_status", "delete_todo", "set_todo_email", "get_settings", "save_preferences", "invite_partner", "revoke_invitation", "accept_invitation", "leave_common_calendar", "rotate_feed", "revoke_feed", "list_oauth_connections", "revoke_oauth_connection", "list_linked_calendars", "add_linked_calendar", "refresh_linked_calendar", "set_linked_calendar_enabled", "remove_linked_calendar", "list_travel_days", "set_travel_days", "get_smtp_config", "save_smtp_config", "test_smtp"])
+      expect(names).toContain(tool);
+    const read = await call("get_event", { eventId: event.id });
+    expect(read.data.event.title).toBe("Depuis MCP");
+    const updated = await call("update_event", { eventId: event.id, version: event.version, calendarId: common.id, visibility: "common", title: "Modifié MCP", temporalData: future(), reminder: { mode: "off" } });
+    expect(updated.error).toBe(false);
+    expect((await call("update_event", { eventId: event.id, version: event.version, calendarId: common.id, visibility: "common", title: "Périmé", temporalData: future() })).error).toBe(true);
+    expect((await call("get_event", { eventId: event.id })).data.reminder).toEqual({ mode: "off" });
+    expect((await call("set_event_reminder", { eventId: event.id, reminder: { mode: "custom", reminderMinutes: 15, emailEnabled: true, pushEnabled: false } })).error).toBe(false);
+    expect((await call("export_ics", { calendarId: common.id })).data.ics).toContain("Modifié MCP");
+    expect((await call("list_events", { from: range().from.toISOString(), to: range().to.toISOString() })).data.events.length).toBeGreaterThan(0);
+    expect((await call("delete_event", { eventId: event.id, version: updated.data.version })).error).toBe(true);
+    expect((await call("delete_event", { eventId: event.id, version: updated.data.version, confirm: true })).error).toBe(false);
+    await expect(getEvent(b.id, event.id)).rejects.toThrow();
+    const todo = await call("create_todo", { title: "Tâche MCP", visibility: "common", dueDate: "2030-01-01" });
+    expect(todo.error).toBe(false);
+    expect((await call("list_todos", {})).data.some((item: { title: string }) => item.title === "Tâche MCP")).toBe(true);
+    const renamed = await call("update_todo", { todoId: todo.data.id, version: todo.data.version, title: "Tâche renommée", visibility: "common", dueDate: null });
+    expect(renamed.error).toBe(false);
+    const done = await call("set_todo_status", { todoId: todo.data.id, version: renamed.data.version, completed: true });
+    expect(done.error).toBe(false);
+    const doneTodo = (await call("list_todos", {})).data.find((item: { id: string }) => item.id === todo.data.id);
+    expect(doneTodo.completedAt).toBeTruthy();
+    expect((await call("delete_todo", { todoId: todo.data.id, version: doneTodo.version })).error).toBe(true);
+    expect((await call("delete_todo", { todoId: todo.data.id, version: doneTodo.version, confirm: true })).error).toBe(false);
+    expect((await call("set_todo_email", { enabled: true })).error).toBe(false);
+    const settingsRead = await call("get_settings", {});
+    expect(settingsRead.data.members.length).toBe(2);
+    expect(settingsRead.data.preferences.todoEmailEnabled).toBe(true);
+    expect((await call("save_preferences", { ...settingsRead.data.preferences, reminderMinutes: 45 })).error).toBe(false);
+    expect((await call("get_settings", {})).data.preferences.reminderMinutes).toBe(45);
+    expect((await call("set_travel_days", { startDate: "2030-02-01", endDate: "2030-02-02", marked: true })).error).toBe(false);
+    expect((await call("list_travel_days", { startDate: "2030-02-01", endDate: "2030-02-03" })).data).toHaveLength(2);
+    expect((await call("set_travel_days", { startDate: "2030-02-01", endDate: "2030-02-02", marked: false })).error).toBe(false);
+    expect((await call("list_linked_calendars", {})).data).toEqual([]);
+    expect((await call("add_linked_calendar", { name: "Interdit", url: "http://exemple.invalid/a.ics", visibility: "solo" })).error).toBe(true);
+    const feed = await call("rotate_feed", { calendarId: common.id });
+    expect(feed.data.url).toContain("/abonnements/");
+    expect((await call("revoke_feed", { calendarId: common.id })).error).toBe(false);
+    expect((await call("list_oauth_connections", {})).data.some((item: { clientId: string }) => item.clientId === clientId)).toBe(true);
+    expect((await call("get_smtp_config", {})).error).toBe(true);
+    expect((await call("leave_common_calendar", {})).error).toBe(true);
     async function grant(cookie: string, scope: string) {
       const requestQuery = new URLSearchParams(query); requestQuery.set("scope", scope); requestQuery.set("state", randomUUID());
       const authorized = await authRequest(`/oauth2/authorize?${requestQuery}`, undefined, cookie);

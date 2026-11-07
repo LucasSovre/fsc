@@ -1,7 +1,7 @@
 export const baseURL = (process.env.BETTER_AUTH_URL || "http://localhost:3000").replace(/\/$/, "");
 export const mcpResource = `${baseURL}/mcp`;
 export const issuer = `${baseURL}/api/auth`;
-export const scopes = ["calendar:read", "event:create", "offline_access"] as const;
+export const scopes = ["calendar:read", "event:write", "todo:write", "settings:write", "linked:write", "travel:write", "admin", "offline_access"] as const;
 
 export function assertPublicURL(value: string) {
   let url: URL;

@@ -1,12 +1,12 @@
 import { requireUser } from "../../server/session";
-import { rows } from "../../server/database";
+import { listConnections } from "../../server/oauth";
 import { mcpResource } from "../../server/config";
 import { ActionForm } from "../components/action-form";
 import { revokeOAuthAction } from "../actions";
 export default async function Page() {
   const user = await requireUser();
-  const consents = await rows<{ clientId: string; name: string | null }>(`SELECT DISTINCT c."clientId",c.name FROM "oauthConsent" consent JOIN "oauthClient" c ON c."clientId"=consent."clientId" WHERE consent."userId"=$1`, [user.id]);
-  return <><h1>Connecter Claude</h1><p>Claude peut lire tes agendas accessibles et créer des événements. Il doit te demander Commun ou Solo avant une création si tu ne l’as pas précisé.</p>
+  const consents = await listConnections(user.id);
+  return <><h1>Connecter Claude</h1><p>Claude peut faire tout ce que fait le site : agendas, événements, tâches, réglages, invitations, calendriers liés et déplacements, selon les droits que tu accordes. Il doit te demander Commun ou Solo avant une création si tu ne l’as pas précisé, et ta confirmation avant une action destructive.</p>
     <p><label>Adresse du serveur MCP <input readOnly value={mcpResource} /></label></p>
     <ol><li>Une fois FSC publié sur un domaine HTTPS, ouvre Personnaliser → Connecteurs dans Claude.</li><li>Ajoute un connecteur personnalisé et colle l’adresse ci-dessus.</li><li>Choisis la connexion OAuth et l’identité publiée de Claude.</li><li>Connecte-toi à FSC avec ton propre compte, vérifie les droits demandés puis autorise.</li><li>Essaie : « Liste mes agendas », puis « Crée un événement commun demain à 19 h, intitulé Dîner, avec le tag Famille ».</li></ol>
     <p>Sur un espace Team ou Enterprise, l’ajout du connecteur peut nécessiter un administrateur. Chaque personne connecte ensuite son propre compte FSC.</p>

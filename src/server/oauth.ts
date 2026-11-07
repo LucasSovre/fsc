@@ -1,4 +1,4 @@
-import { transaction } from "./database";
+import { rows, transaction } from "./database";
 import { account } from "./calendar";
 import { z } from "zod";
 export async function revokeConnection(userId: string, clientId: string) {
@@ -9,4 +9,7 @@ export async function revokeConnection(userId: string, clientId: string) {
     await db.query('DELETE FROM "oauthRefreshToken" WHERE "userId"=$1 AND "clientId"=$2', [userId, clientId]);
     await db.query('DELETE FROM "oauthConsent" WHERE "userId"=$1 AND "clientId"=$2', [userId, clientId]);
   });
+}
+export async function listConnections(userId: string) {
+  return rows<{ clientId: string; name: string | null }>(`SELECT DISTINCT c."clientId",c.name FROM "oauthConsent" consent JOIN "oauthClient" c ON c."clientId"=consent."clientId" WHERE consent."userId"=$1`, [userId]);
 }
