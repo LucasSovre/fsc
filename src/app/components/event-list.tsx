@@ -20,10 +20,10 @@ function eventWhen(event: Event, zone: string) {
     ? <>{dayLabel(startDay, startDay.slice(0, 4) !== thisYear)} · {stamp(event.startsAt!, startDay)} – {stamp(event.endsAt!, endDay)}</>
     : <>{stamp(event.startsAt!, startDay)} → {stamp(event.endsAt!, endDay)}</>;
 }
-export function EventList({ events, zone }: { events: Event[]; zone: string }) {
+export function EventList({ events, zone, linked = true }: { events: Event[]; zone: string; linked?: boolean }) {
   return events.length ? <ul className="event-list">{events.map(event => <li className="event-card" data-visibility={event.visibility} key={event.id}>
     <p className="event-time">{eventWhen(event, zone)}</p>
-    <Link className="event-title" href={`/evenements/${event.id}`}>{event.title}</Link>
+    {linked && <Link className="event-title" href={`/evenements/${event.id}`}>{event.title}</Link>}
     <p className="event-meta"><strong className="event-visibility">{event.visibility === "common" ? "Commun" : "Solo"}</strong>{event.location && ` · ${event.location}`}</p>
     {event.tags.length > 0 && <p className="event-tags">Tags : {event.tags.join(", ")}</p>}
   </li>)}</ul> : <p className="empty-state">Aucun événement.</p>;

@@ -13,7 +13,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const event = await getEvent(user.id, id).catch(error => { if (error instanceof DomainError && error.status === 404) notFound(); throw error; });
   const reminder = await getEventReminder(user.id, id), { profile } = await settings(user.id);
   const rights = event.linkedCalendarId ? "Cet événement est mis à jour depuis un calendrier lié. Pour le modifier ou le supprimer, utilise le calendrier source. Ton rappel personnel reste modifiable ci-dessous." : event.visibility === "common" ? "Vous pouvez tous les deux modifier et supprimer cet événement." : "Cet événement est privé. Toi seul peux le consulter et le modifier.";
-  return <><h1>{event.title}</h1><Notice code={ok} /><EventList events={[event]} zone={event.timeZone} />
+  return <><h1>{event.title}</h1><Notice code={ok} /><EventList events={[event]} zone={event.timeZone} linked={false} />
     <p><Link className="button-link" href={event.linkedCalendarId ? "/calendriers-lies" : `/evenements/${event.id}/modifier`}>{event.linkedCalendarId ? "Voir les calendriers liés" : "Modifier"}</Link></p>
     {event.description.split("\n").map((line, i) => <p key={i}>{line}</p>)}
     <p className="field-help">{rights}</p>
