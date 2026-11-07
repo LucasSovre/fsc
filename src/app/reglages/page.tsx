@@ -54,7 +54,7 @@ export default async function Page() {
         <p><label><input type="checkbox" name="secure" defaultChecked={smtp.config?.secure ?? false} /> Connexion sécurisée (TLS direct, port 465)</label></p>
         <p><label>Utilisateur <input name="user" autoComplete="off" defaultValue={smtp.config?.user ?? ""} /></label></p>
         <p><label>Mot de passe <input name="password" type="password" autoComplete="new-password" placeholder={smtp.config?.hasPassword ? "Inchangé" : ""} /></label></p>
-        <p><label>Expéditeur <input name="from" defaultValue={smtp.config?.from ?? "FSC <fsc@example.com>"} required /></label></p>
+        <p><label>Expéditeur <input name="from" defaultValue={smtp.config?.from} placeholder="FSC <fsc@exemple.fr>" required /></label></p>
         <button>Enregistrer la configuration SMTP</button>
       </ActionForm>
       <ActionForm action={smtpTestAction}>
