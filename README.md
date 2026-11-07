@@ -116,6 +116,13 @@ docker compose exec app node --import tsx scripts/create-account.ts --email admi
 
 Pour promouvoir un compte existant : même commande avec `--email` et `--admin` seulement.
 
+Vérifier une adresse à la main, ou renvoyer l’e-mail de vérification (`--resend`) :
+
+```sh
+docker compose exec app node --import tsx scripts/verify-account.ts --email alice@example.com
+docker compose exec app node --import tsx scripts/verify-account.ts --email alice@example.com --resend
+```
+
 ### HTTPS et proxy
 
 Pointer le proxy sur `127.0.0.1:3000`, conserver les chemins et les méthodes HTTP, et
