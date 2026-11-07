@@ -13,7 +13,7 @@ const authErrors: Record<string, string> = {
   TOO_MANY_REQUESTS: "Trop de tentatives. Réessaie dans quelques minutes.",
 };
 
-export function AuthForm({ mode }: { mode: "connexion" | "inscription" | "oubli" | "nouveau" }) {
+export function AuthForm({ mode }: { mode: "connexion" | "oubli" | "nouveau" }) {
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const ready = useHydrated();
@@ -26,12 +26,10 @@ export function AuthForm({ mode }: { mode: "connexion" | "inscription" | "oubli"
       const requested = params.get("retour") || "/";
       const callbackURL = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/";
       const result = mode === "connexion" ? await authClient.signIn.email({ email, password, callbackURL })
-        : mode === "inscription" ? await authClient.signUp.email({ email, password, name: String(form.get("name") || ""), callbackURL })
         : mode === "oubli" ? await authClient.requestPasswordReset({ email, redirectTo: `${window.location.origin}/nouveau-mot-de-passe` })
         : await authClient.resetPassword({ newPassword: password, token: params.get("token") || "" });
       if (result.error) setMessage(authErrors[result.error.code || ""] || "Impossible de terminer cette demande. Vérifie les informations ou réessaie dans un instant.");
       else if (mode === "connexion") window.location.assign(result.data && "url" in result.data && typeof result.data.url === "string" ? result.data.url : callbackURL);
-      else if (mode === "inscription") setMessage("Consulte tes e-mails pour vérifier ton adresse avant de te connecter.");
       else if (mode === "oubli") setMessage("Si ce compte existe, un lien de réinitialisation a été envoyé.");
       else setMessage("Mot de passe enregistré. Tu peux te connecter.");
     } catch { setMessage("Connexion impossible. Réessaie dans un instant."); }
@@ -39,12 +37,11 @@ export function AuthForm({ mode }: { mode: "connexion" | "inscription" | "oubli"
   }
   return <form onSubmit={submit}>
     <fieldset disabled={pending || !ready}>
-      <legend>{mode === "connexion" ? "Se connecter" : mode === "inscription" ? "Créer un compte" : mode === "oubli" ? "Recevoir un lien" : "Nouveau mot de passe"}</legend>
-      {mode === "inscription" && <p><label>Prénom <input name="name" autoComplete="given-name" required maxLength={100} /></label></p>}
+      <legend>{mode === "connexion" ? "Se connecter" : mode === "oubli" ? "Recevoir un lien" : "Nouveau mot de passe"}</legend>
       {mode !== "nouveau" && <p><label>E-mail <input type="email" name="email" autoComplete="email" required maxLength={254} /></label></p>}
       {mode !== "oubli" && <p><label>Mot de passe <input type="password" name="password" required minLength={mode === "connexion" ? 1 : 12} autoComplete={mode === "connexion" ? "current-password" : "new-password"} /></label></p>}
       {mode !== "connexion" && mode !== "oubli" && <p>Au moins 12 caractères.</p>}
-      <button type="submit">{pending ? "En cours…" : mode === "connexion" ? "Se connecter" : mode === "inscription" ? "Créer mon compte" : "Envoyer"}</button>
+      <button type="submit">{pending ? "En cours…" : mode === "connexion" ? "Se connecter" : "Envoyer"}</button>
     </fieldset>
     <p role="status">{message}</p>
   </form>;

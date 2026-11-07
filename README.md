@@ -17,7 +17,8 @@ Pas de récurrences, CalDAV, import ICS ou synchronisation bidirectionnelle dans
 
 ## Démarrage Docker
 
-Prérequis : Docker Compose v2, un domaine HTTPS, un SMTP et un reverse proxy.
+Prérequis : Docker Compose v2 et un SMTP. Pour un déploiement public, ajouter un
+domaine HTTPS et un reverse proxy.
 
 ```sh
 cp .env.example .env
@@ -25,9 +26,9 @@ cp .env.example .env
 
 Configurer au minimum :
 
-- `POSTGRES_PASSWORD` : mot de passe URL-safe, par exemple généré par `openssl rand -hex 32`.
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` : identifiants PostgreSQL. L’URL de connexion est construite automatiquement, avec encodage des caractères spéciaux.
 - `BETTER_AUTH_SECRET` : secret aléatoire d’au moins 32 caractères, stable entre déploiements.
-- `BETTER_AUTH_URL` : origine HTTPS publique exacte, sans chemin, par exemple `https://calendar.example.com`.
+- `BETTER_AUTH_URL` : `http://localhost:3000` pour Docker local, ou l’origine HTTPS publique exacte, sans chemin, par exemple `https://calendar.example.com`.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` : vérification, invitations, reset et rappels.
 - Facultatif : clés Web Push générées une fois avec `bunx web-push generate-vapid-keys`, puis `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
 
@@ -37,9 +38,14 @@ docker compose ps
 docker compose logs -f app worker migrate
 ```
 
+Le mode production des images Docker accepte HTTP sur `localhost`, `127.0.0.1` et
+`::1` pour les essais locaux. Une adresse publique exige HTTPS, notamment pour
+connecter Claude. Le message « Next.js Ready » affiche l’écoute interne HTTP du
+conteneur ; le reverse proxy assure le HTTPS public.
+
 Compose démarre PostgreSQL, applique la migration initiale, puis démarre l’application et
 un worker unique. Une migration en échec empêche leur démarrage. L’application est exposée
-sur `127.0.0.1:3000` par défaut ; la base reste dans le réseau Docker. Les images tournent
+sur le port `3000` de l’hôte par défaut (`APP_PORT`) ; la base reste dans le réseau Docker. Les images tournent
 avec un utilisateur non-root. Les identifiants ne sont pas nécessaires au build.
 
 **Cette version repart de zéro** : l’ancien schéma de démonstration et ses migrations
@@ -50,6 +56,29 @@ ne supprime ni ne réinitialise une base ou un volume existant.
 `docker compose down` conserve le volume PostgreSQL. Ne pas changer son mot de passe
 dans `.env` sans le changer également dans PostgreSQL. Une mise à jour normale utilise
 `docker compose up -d --build` ; ne pas régénérer les migrations sur le serveur.
+
+### Créer les comptes (CLI uniquement)
+
+L’inscription publique est désactivée côté serveur. Seul l’administrateur ayant
+accès au terminal peut créer un compte ; les invitations ne créent pas de compte.
+
+Avec Docker, après le démarrage de la base et les migrations :
+
+```sh
+docker compose exec worker node --import tsx scripts/create-account.ts --email alice@example.com --name Alice
+```
+
+En développement local (connexion PostgreSQL configurée dans `.env`) :
+
+```sh
+bun run account:create --email alice@example.com --name Alice
+```
+
+Le mot de passe est demandé deux fois, sans affichage. Pour une automatisation,
+`--password-stdin` lit le mot de passe sur l’entrée standard ; ne pas le mettre
+dans les arguments de commande. Un e-mail de vérification est envoyé et reste
+obligatoire avant connexion. Une tentative de connexion à un compte non vérifié
+renvoie cet e-mail si nécessaire. La réinitialisation du mot de passe reste disponible.
 
 ### HTTPS et proxy
 
@@ -99,7 +128,8 @@ Prérequis : Bun, Node compatible avec Next.js, PostgreSQL 17 et un SMTP de dév
 
 ```sh
 bun install
-# Dans .env : DATABASE_URL accessible depuis l’hôte,
+# Dans .env : POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
+# POSTGRES_HOST=localhost et POSTGRES_PORT=5432 (ou ton serveur PostgreSQL),
 # BETTER_AUTH_URL=http://localhost:3000 et SMTP de développement.
 bun run migrate
 bun run dev
@@ -232,7 +262,7 @@ bun run build
 
 Les tests d’intégration exigent volontairement un nom de base terminant par `_test`.
 Ils créent des comptes uniques et n’effacent pas une base existante. Préparer une
-base migrée et un Mailpit local, puis définir `DATABASE_URL`, `SMTP_HOST`,
+base migrée et un Mailpit local, puis définir les variables `POSTGRES_*`, `SMTP_HOST`,
 `SMTP_PORT`, `MAILPIT_URL` et `BETTER_AUTH_URL=http://localhost:3000` :
 
 ```sh
@@ -279,10 +309,12 @@ docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -
 ```
 
 Restaurer dans une **nouvelle base vide**, puis pointer FSC vers cette base. Par exemple,
-avec un PostgreSQL de restauration dont `DATABASE_URL` désigne la nouvelle base :
+avec les variables `POSTGRES_*` désignant le serveur et la nouvelle base :
 
 ```sh
-pg_restore --no-owner --dbname="$DATABASE_URL" fsc.dump
+PGHOST="${POSTGRES_HOST:-localhost}" PGPORT="${POSTGRES_PORT:-5432}" \
+PGUSER="$POSTGRES_USER" PGPASSWORD="$POSTGRES_PASSWORD" \
+pg_restore --no-owner --dbname="$POSTGRES_DB" fsc.dump
 ```
 
 Restaurer aussi `BETTER_AUTH_SECRET` et les clés VAPID pour conserver la validité des

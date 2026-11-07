@@ -25,7 +25,7 @@ export default async function RootLayout({
           {current?.user.emailVerified ? <>
             <nav aria-label="Navigation principale"><Link href="/">Accueil</Link>{" · "}<Link href="/calendrier">Calendrier</Link>{" · "}<Link href="/evenements/nouveau">Créer</Link>{" · "}<Link href="/reglages">Réglages</Link>{" · "}<Link href="/claude">Connecter Claude</Link></nav>
             <p>{current.user.name} · {current.user.email}</p><Logout />
-          </> : <nav><Link href="/connexion">Connexion</Link>{" · "}<Link href="/inscription">Créer un compte</Link></nav>}
+          </> : <nav><Link href="/connexion">Connexion</Link></nav>}
         </header>
         <hr /><main id="contenu">{children}</main>
         <datalist id="timezones"><option value="Europe/Paris" /><option value="Europe/London" /><option value="America/Montreal" /><option value="America/New_York" /><option value="Asia/Tokyo" /><option value="UTC" /></datalist>

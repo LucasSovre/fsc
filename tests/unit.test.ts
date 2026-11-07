@@ -3,6 +3,40 @@ import { dateValue, eventDates, eventSchema, instant, tagKey } from "../src/serv
 import { reminderPlan } from "../src/server/reminder-plan";
 import { calendarICS } from "../src/server/ics";
 import type { Event, Profile } from "../src/server/types";
+import { databaseUrl } from "../src/server/database-url";
+import { assertPublicURL } from "../src/server/config";
+
+describe("URL publique et Docker local", () => {
+  test("autorise HTTP sur les adresses de boucle locale", () => {
+    for (const host of ["localhost", "127.0.0.1", "[::1]"])
+      expect(() => assertPublicURL(`http://${host}:3000`)).not.toThrow();
+  });
+  test("conserve HTTPS pour les domaines publics", () => {
+    expect(() => assertPublicURL("https://calendar.example.com")).not.toThrow();
+    for (const url of ["http://calendar.example.com", "http://localhost.example.com", "ftp://localhost", "adresse-invalide"])
+      expect(() => assertPublicURL(url)).toThrow();
+  });
+});
+
+describe("connexion PostgreSQL", () => {
+  test("construit l’URL avec les variables PostgreSQL et les valeurs locales par défaut", () => {
+    expect(databaseUrl({ POSTGRES_PASSWORD: "secret" })).toBe("postgresql://fsc:secret@localhost:5432/fsc");
+    expect(databaseUrl({ POSTGRES_USER: "alice", POSTGRES_PASSWORD: "secret", POSTGRES_DB: "calendar", POSTGRES_HOST: "db", POSTGRES_PORT: "5433" }))
+      .toBe("postgresql://alice:secret@db:5433/calendar");
+  });
+  test("encode les caractères réservés du compte, du mot de passe et de la base", () => {
+    const user = "couple@fsc", password = "p@ss:/?#%$", database = "fsc/test?";
+    const url = new URL(databaseUrl({ POSTGRES_USER: user, POSTGRES_PASSWORD: password, POSTGRES_DB: database }));
+    expect(decodeURIComponent(url.username)).toBe(user);
+    expect(decodeURIComponent(url.password)).toBe(password);
+    expect(decodeURIComponent(url.pathname.slice(1))).toBe(database);
+    expect(url.hostname).toBe("localhost");
+    expect(url.search).toBe(""); expect(url.hash).toBe("");
+  });
+  test("accepte une adresse IPv6 comme hôte", () => {
+    expect(new URL(databaseUrl({ POSTGRES_HOST: "::1" })).hostname).toBe("[::1]");
+  });
+});
 
 const profile = { timeZone: "Europe/Paris", reminderMinutes: 30, reminderMode: "tags", selectedTags: ["famille", "important"] } as Profile;
 const event = { id: "test", title: "Dîner, ensemble;\nDemain", description: "Texte\nBEGIN:VEVENT", location: "Paris", allDay: false, startsAt: new Date("2027-01-01T18:00:00Z"), endsAt: new Date("2027-01-01T19:00:00Z"), tags: ["famille", "important"], version: 2, createdAt: new Date(), updatedAt: new Date() } as Event;

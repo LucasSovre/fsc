@@ -1,5 +1,12 @@
+x-postgres-environment: &postgres-environment
+  POSTGRES_USER: ${POSTGRES_USER:-fsc}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+  POSTGRES_DB: ${POSTGRES_DB:-fsc}
+  POSTGRES_HOST: db
+  POSTGRES_PORT: "5432"
+
 x-fsc-environment: &fsc-environment
-  DATABASE_URL: postgresql://${POSTGRES_USER:-fsc}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-fsc}
+  <<: *postgres-environment
   BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Set the public HTTPS URL in .env}
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a random secret of at least 32 characters}
   SMTP_HOST: ${SMTP_HOST:-}
@@ -16,10 +23,7 @@ services:
   db:
     image: postgres:17-bookworm
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-fsc}
-      POSTGRES_USER: ${POSTGRES_USER:-fsc}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    environment: *postgres-environment
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,8 +37,7 @@ services:
     build:
       context: .
       target: migrate
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-fsc}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-fsc}
+    environment: *postgres-environment
     depends_on:
       db:
         condition: service_healthy
@@ -46,7 +49,7 @@ services:
     restart: unless-stopped
     environment: *fsc-environment
     ports:
-      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-3000}:3000"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -76,7 +79,6 @@ services:
   mailpit:
     image: axllent/mailpit:v1.27.0
     command: ["--smtp-disable-rdns"]
-    profiles: ["mailpit"]
     restart: unless-stopped
     ports:
       - "127.0.0.1:8025:8025"

@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { auth } from "../src/server/auth";
+import { auth, createCLIAuth } from "../src/server/auth";
 import { baseURL } from "../src/server/config";
+import { databaseUrl } from "../src/server/database-url";
 
 export function assertTestDatabase() {
-  const url = new URL(process.env.DATABASE_URL || "postgres://localhost/missing");
+  const url = new URL(databaseUrl());
   if (!url.pathname.endsWith("_test")) throw new Error("Les tests d’intégration exigent une base dont le nom finit par _test.");
 }
 export const password = "Fsc-test-only-123456789!";
@@ -18,8 +19,7 @@ export async function authRequest(path: string, body?: unknown, cookie?: string)
 export async function register(name = "Compte") {
   assertTestDatabase();
   const email = `${randomUUID()}@fsc.test`;
-  const response = await authRequest("/sign-up/email", { name, email, password, callbackURL: "/" });
-  if (!response.ok) throw new Error(`Inscription : ${response.status} ${await response.text()}`);
+  await createCLIAuth().api.signUpEmail({ body: { name, email, password, callbackURL: "/" } });
   const mailbox = process.env.MAILPIT_URL || "http://127.0.0.1:18025";
   const result = await fetch(`${mailbox}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`).then(r => r.json()) as { messages: { ID: string }[] };
   if (!result.messages.length) throw new Error("E-mail de vérification introuvable.");

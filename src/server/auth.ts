@@ -7,22 +7,22 @@ import { authSchemaOptions, provider, cimdPlugin } from "./auth-options";
 import { assertProductionConfig, baseURL, mcpResource } from "./config";
 import { sendMail } from "./mail";
 
-const createAuth = () => betterAuth({
+const createAuth = (allowSignUp = false) => betterAuth({
   ...authSchemaOptions,
   database: pool,
   secret: process.env.BETTER_AUTH_SECRET || "fsc-local-development-secret-change-me-123456",
   trustedOrigins: [baseURL],
   advanced: { ipAddress: { ipAddressHeaders: ["x-real-ip", "x-forwarded-for"] } },
   emailAndPassword: {
-    enabled: true, requireEmailVerification: true, minPasswordLength: 12,
+    enabled: true, disableSignUp: !allowSignUp, requireEmailVerification: true, minPasswordLength: 12,
     sendResetPassword: async ({ user, url }) => sendMail(user.email, "FSC — nouveau mot de passe", `Choisis un nouveau mot de passe : ${url}`),
   },
   emailVerification: {
-    sendOnSignUp: true, autoSignInAfterVerification: true,
+    sendOnSignUp: true, sendOnSignIn: true, autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => sendMail(user.email, "FSC — vérifie ton adresse", `Vérifie ton adresse e-mail : ${url}`),
   },
   session: { cookieCache: { enabled: false } },
-  plugins: [provider, cimdPlugin, {
+  plugins: allowSignUp ? [] : [provider, cimdPlugin, {
     id: "fsc-resource-verification",
     endpoints: {
       verifyFscAccess: createAuthEndpoint.serverOnly({ method: "POST", body: z.object({ token: z.string() }) }, async ctx => {
@@ -52,3 +52,9 @@ export const auth = {
 };
 
 export function productionReady() { assertProductionConfig(); }
+
+// Only the local administration script uses this instance; no route exposes it.
+export function createCLIAuth() {
+  assertProductionConfig();
+  return createAuth(true);
+}

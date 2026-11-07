@@ -5,7 +5,7 @@ import { pool, rows } from "../src/server/database";
 import { acceptInvitation, createInvitation, deleteEvent, feedEvents, getEvent, leaveCalendar, listCalendars, listEvents, revokeFeed, rotateFeed, saveEvent, savePreferences, settings } from "../src/server/calendar";
 import { recoverInterrupted, tick, type Sender } from "../src/server/worker";
 import { handleMCP } from "../src/server/mcp";
-import { auth } from "../src/server/auth";
+import { auth, createCLIAuth } from "../src/server/auth";
 import { addPushSubscription } from "../src/server/push";
 import { revokeConnection } from "../src/server/oauth";
 import { baseURL, mcpResource } from "../src/server/config";
@@ -21,9 +21,33 @@ async function rpc(token: string, method: string, params: unknown = {}, id = 1) 
   return { response, body: response.headers.get("content-type")?.includes("json") ? await response.json() : null };
 }
 describe("FSC sur PostgreSQL", () => {
+  test("création CLI, doublon refusé et inscription HTTP bloquée", async () => {
+    const email = `${randomUUID()}@fsc.test`;
+    async function cli() {
+      const child = Bun.spawn(["node", "--import", "tsx", "scripts/create-account.ts", "--email", email, "--name", "CLI", "--password-stdin"], {
+        stdin: new Blob([password + "\n"]), stdout: "pipe", stderr: "pipe",
+      });
+      const output = await new Response(child.stdout).text();
+      const errors = await new Response(child.stderr).text();
+      return { code: await child.exited, output, errors };
+    }
+    const created = await cli();
+    expect(created.code).toBe(0);
+    expect(created.output).toContain("Compte créé");
+    expect(created.output + created.errors).not.toContain(password);
+    expect((await rows('SELECT id FROM "user" WHERE email=$1', [email]))).toHaveLength(1);
+    expect((await authRequest("/sign-in/email", { email, password })).ok).toBe(false);
+    expect((await cli()).code).toBe(1);
+    const response = await authRequest("/sign-up/email", { email: `${randomUUID()}@fsc.test`, name: "Interdit", password });
+    expect(response.status).toBe(400);
+    expect((await response.json()).code).toBe("EMAIL_PASSWORD_SIGN_UP_DISABLED");
+  }, 30000);
+
   test("adresse vérifiée obligatoire et réinitialisation du mot de passe à usage unique", async () => {
     const email = `${randomUUID()}@fsc.test`;
-    expect((await authRequest("/sign-up/email", { name: "Non vérifié", email, password })).ok).toBe(true);
+    expect((await authRequest("/sign-up/email", { name: "Non vérifié", email, password })).ok).toBe(false);
+    expect(await rows('SELECT id FROM "user" WHERE email=$1', [email])).toHaveLength(0);
+    await createCLIAuth().api.signUpEmail({ body: { name: "Non vérifié", email, password } });
     expect((await authRequest("/sign-in/email", { email, password })).ok).toBe(false);
     const user = await register("Mot de passe");
     expect((await authRequest("/request-password-reset", { email: user.email, redirectTo: `${baseURL}/nouveau-mot-de-passe` })).ok).toBe(true);

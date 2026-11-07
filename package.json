@@ -13,6 +13,7 @@
     "db:update": "prisma db update",
     "db:verify": "prisma db verify",
     "dev": "next dev --webpack",
+    "account:create": "node --env-file=.env --import tsx scripts/create-account.ts",
     "worker": "tsx scripts/worker.ts",
     "worker:health": "tsx scripts/worker-health.ts",
     "typecheck": "tsc --noEmit",

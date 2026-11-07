@@ -1,7 +1,8 @@
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
+import { databaseUrl } from "./database-url";
 
 const globalDB = globalThis as unknown as { fscPool?: Pool };
-export const pool = globalDB.fscPool ?? new Pool({ connectionString: process.env.DATABASE_URL, max: 10 });
+export const pool = globalDB.fscPool ?? new Pool({ connectionString: databaseUrl(), max: 10 });
 if (process.env.NODE_ENV !== "production") globalDB.fscPool = pool;
 export type Connection = Pick<PoolClient, "query">;
 export async function rows<T extends QueryResultRow>(sql: string, values: unknown[] = [], db: Connection = pool): Promise<T[]> {
