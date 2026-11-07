@@ -50,7 +50,7 @@ export async function listCalendars(userId: string) {
 export async function getEvent(userId: string, eventId: string) {
   return transaction(async db => { await account(db, userId); return eventIn(db, userId, eventId); });
 }
-async function eventIn(db: Connection, userId: string, eventId: string) {
+export async function eventIn(db: Connection, userId: string, eventId: string) {
   const [event] = await rows<Event>(`SELECT e.*,c.kind AS visibility FROM event e JOIN calendar c ON c.id=e."calendarId"
     WHERE e.id=$2 AND(c."ownerId"=$1 OR EXISTS(SELECT 1 FROM member m WHERE m."calendarId"=c.id AND m."userId"=$1))`, [userId, eventId], db);
   if (!event) throw new DomainError("Événement introuvable.", 404);
@@ -135,16 +135,16 @@ export async function saveEvent(userId: string, raw: unknown, edit?: { id: strin
     const tags = [...new Set(input.tags.map(tagKey))];
     await addTags(db, profile.catalogId, input.tags);
     const values = [target.id, input.title, input.description, input.location, dates.allDay, dates.startsAt, dates.endsAt,
-      dates.startDate, dates.endDate, dates.timeZone, tags];
+      dates.startDate, dates.endDate, dates.timeZone, tags, input.type, input.link];
     let id: string;
     if (existing) {
       id = existing.id;
       await db.query(`UPDATE event SET "calendarId"=$1,title=$2,description=$3,location=$4,"allDay"=$5,"startsAt"=$6,"endsAt"=$7,
-        "startDate"=$8,"endDate"=$9,"timeZone"=$10,tags=$11,version=version+1,"updatedAt"=now() WHERE id=$12`, [...values, id]);
+        "startDate"=$8,"endDate"=$9,"timeZone"=$10,tags=$11,type=$12,link=$13,version=version+1,"updatedAt"=now() WHERE id=$14`, [...values, id]);
     } else {
       id = randomUUID();
-      await db.query(`INSERT INTO event("calendarId",title,description,location,"allDay","startsAt","endsAt","startDate","endDate","timeZone",tags,id,"creatorId")
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, [...values, id, userId]);
+      await db.query(`INSERT INTO event("calendarId",title,description,location,"allDay","startsAt","endsAt","startDate","endDate","timeZone",tags,type,link,id,"creatorId")
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`, [...values, id, userId]);
     }
     if (reminder) await storeEventReminder(db, userId, id, reminder);
     await reconcileReminders(db, id);

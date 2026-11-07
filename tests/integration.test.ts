@@ -6,6 +6,8 @@ import { acceptInvitation, createInvitation, deleteEvent, feedEvents, getEvent, 
 import { recoverInterrupted, tick, tickTodoDigests, type Sender } from "../src/server/worker";
 import { completeTodo, deleteTodo, listTodos, saveTodo, saveTodoEmailPreference } from "../src/server/todo";
 import { addLinkedCalendar, listLinkedCalendars, removeLinkedCalendar, setLinkedCalendarEnabled, syncLinkedCalendar, syncLinkedCalendars } from "../src/server/linked-calendars";
+import { listAttachments, readAttachment, syncAttachments } from "../src/server/attachments";
+import { calendarICS } from "../src/server/ics";
 import { handleMCP } from "../src/server/mcp";
 import { auth, createCLIAuth } from "../src/server/auth";
 import { addPushSubscription } from "../src/server/push";
@@ -121,6 +123,28 @@ describe("FSC sur PostgreSQL", () => {
     const capacity = await createInvitation(a.id, outsider.email);
     await acceptInvitation(outsider.id, tokenFrom(capacity.url));
     await expect(createInvitation(a.id, b.email)).rejects.toThrow();
+  }, 30000);
+
+  test("type, lien et billets : validation, isolation, cascade", async () => {
+    process.env.UPLOAD_DIR = `/tmp/fsc-uploads-${randomUUID()}`;
+    const a = await register("Billets"), outsider = await register("Intrus");
+    await expect(saveEvent(a.id, { visibility: "solo", title: "X", type: "inconnu", temporalData: future() })).rejects.toThrow();
+    await expect(saveEvent(a.id, { visibility: "solo", title: "X", link: "javascript:alert(1)", temporalData: future() })).rejects.toThrow();
+    const event = await saveEvent(a.id, { visibility: "solo", title: "Concert", type: "spectacle", link: "https://exemple.fr/billets", temporalData: future() });
+    expect(event.type).toBe("spectacle");
+    expect(calendarICS({ id: "c", kind: "solo", ownerId: a.id, catalogId: "x" }, [event])).toContain("URL;VALUE=URI:https://exemple.fr/billets");
+    const pdf = new File([new Uint8Array([37, 80, 68, 70])], "billet.pdf", { type: "application/pdf" });
+    await expect(syncAttachments(a.id, event.id, [new File(["x"], "script.html", { type: "text/html" })], [])).rejects.toThrow();
+    await expect(syncAttachments(outsider.id, event.id, [pdf], [])).rejects.toThrow();
+    await syncAttachments(a.id, event.id, [pdf, new File([new Uint8Array([1, 2])], "qr.png", { type: "image/png" })], []);
+    const files = await listAttachments(event.id);
+    expect(files.map(f => f.name)).toEqual(["billet.pdf", "qr.png"]);
+    expect((await readAttachment(a.id, event.id, files[0].id)).data.length).toBe(4);
+    await expect(readAttachment(outsider.id, event.id, files[0].id)).rejects.toThrow();
+    await syncAttachments(a.id, event.id, [], [files[1].id]);
+    expect(await listAttachments(event.id)).toHaveLength(1);
+    await deleteEvent(a.id, event.id, event.version);
+    expect(await listAttachments(event.id)).toHaveLength(0);
   }, 30000);
 
   test("reprise du worker : échecs explicites réessayés, résultat incertain jamais rejoué", async () => {

@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'37e5c8f0d65262c364067a164556bb44975a6a9cb3833bea79f593acb3d28de0'>;
+  StorageHashBase<'a0747993480de4ec251e16294c62603d14fdc914fad54aebed08d62ada953156'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -527,6 +527,7 @@ export namespace Models {
     endDate: FieldOutputTypes['public']['Event']['endDate'];
     endsAt: FieldOutputTypes['public']['Event']['endsAt'];
     id: FieldOutputTypes['public']['Event']['id'];
+    link: FieldOutputTypes['public']['Event']['link'];
     linkedCalendarId: FieldOutputTypes['public']['Event']['linkedCalendarId'];
     location: FieldOutputTypes['public']['Event']['location'];
     sourceKey: FieldOutputTypes['public']['Event']['sourceKey'];
@@ -535,12 +536,24 @@ export namespace Models {
     tags: FieldOutputTypes['public']['Event']['tags'];
     timeZone: FieldOutputTypes['public']['Event']['timeZone'];
     title: FieldOutputTypes['public']['Event']['title'];
+    type: FieldOutputTypes['public']['Event']['type'];
     updatedAt: FieldOutputTypes['public']['Event']['updatedAt'];
     version: FieldOutputTypes['public']['Event']['version'];
+    attachments: public_EventAttachment[];
     calendar: public_Calendar;
     creator: public_AuthUser;
     linkedCalendar: public_LinkedCalendar | null;
-    readonly [RelationKeys]?: 'calendar' | 'creator' | 'linkedCalendar';
+    readonly [RelationKeys]?: 'attachments' | 'calendar' | 'creator' | 'linkedCalendar';
+  };
+  export type public_EventAttachment = {
+    createdAt: FieldOutputTypes['public']['EventAttachment']['createdAt'];
+    eventId: FieldOutputTypes['public']['EventAttachment']['eventId'];
+    id: FieldOutputTypes['public']['EventAttachment']['id'];
+    mime: FieldOutputTypes['public']['EventAttachment']['mime'];
+    name: FieldOutputTypes['public']['EventAttachment']['name'];
+    size: FieldOutputTypes['public']['EventAttachment']['size'];
+    event: public_Event;
+    readonly [RelationKeys]?: 'event';
   };
   export type public_EventReminderPreference = {
     emailEnabled: FieldOutputTypes['public']['EventReminderPreference']['emailEnabled'];
@@ -697,6 +710,7 @@ export declare const models: {
     Catalog: Models.public_Catalog;
     Delivery: Models.public_Delivery;
     Event: Models.public_Event;
+    EventAttachment: Models.public_EventAttachment;
     EventReminderPreference: Models.public_EventReminderPreference;
     Feed: Models.public_Feed;
     Invitation: Models.public_Invitation;
@@ -1035,6 +1049,16 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly link: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', ''>;
+                  };
+                  readonly many: false;
+                };
                 readonly linkedCalendarId: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -1090,6 +1114,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly updatedAt: {
@@ -1179,6 +1209,72 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'linkedCalendar';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly eventAttachment: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly eventId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly mime: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly size: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'eventAttachment_eventId_idx_6a266d47';
+                  readonly prefix: 'eventAttachment_eventId_idx';
+                  readonly columns: readonly ['eventId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'eventAttachment';
+                    readonly columns: readonly ['eventId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'event';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -3364,6 +3460,10 @@ type ContractBase = Omit<
     readonly catalog: { readonly namespace: 'public' & NamespaceId; readonly model: 'Catalog' };
     readonly delivery: { readonly namespace: 'public' & NamespaceId; readonly model: 'Delivery' };
     readonly event: { readonly namespace: 'public' & NamespaceId; readonly model: 'Event' };
+    readonly eventAttachment: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'EventAttachment';
+    };
     readonly eventReminderPreference: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'EventReminderPreference';
@@ -4719,6 +4819,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly link: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly linkedCalendarId: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -4756,6 +4860,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly type: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -4770,6 +4878,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly attachments: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'EventAttachment';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['eventId'];
+                };
+              };
               readonly calendar: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -4819,6 +4938,7 @@ type ContractBase = Omit<
                 readonly endDate: { readonly column: 'endDate' };
                 readonly endsAt: { readonly column: 'endsAt' };
                 readonly id: { readonly column: 'id' };
+                readonly link: { readonly column: 'link' };
                 readonly linkedCalendarId: { readonly column: 'linkedCalendarId' };
                 readonly location: { readonly column: 'location' };
                 readonly sourceKey: { readonly column: 'sourceKey' };
@@ -4827,8 +4947,67 @@ type ContractBase = Omit<
                 readonly tags: { readonly column: 'tags' };
                 readonly timeZone: { readonly column: 'timeZone' };
                 readonly title: { readonly column: 'title' };
+                readonly type: { readonly column: 'type' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly version: { readonly column: 'version' };
+              };
+            };
+          };
+          readonly EventAttachment: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly eventId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly mime: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly size: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly event: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Event';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['eventId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'eventAttachment';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly eventId: { readonly column: 'eventId' };
+                readonly id: { readonly column: 'id' };
+                readonly mime: { readonly column: 'mime' };
+                readonly name: { readonly column: 'name' };
+                readonly size: { readonly column: 'size' };
               };
             };
           };

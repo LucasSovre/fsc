@@ -24,6 +24,10 @@
       "model": "Event",
       "namespace": "public"
     },
+    "eventAttachment": {
+      "model": "EventAttachment",
+      "namespace": "public"
+    },
     "eventReminderPreference": {
       "model": "EventReminderPreference",
       "namespace": "public"
@@ -2201,6 +2205,13 @@
                   "kind": "scalar"
                 }
               },
+              "link": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "linkedCalendarId": {
                 "nullable": true,
                 "type": {
@@ -2263,6 +2274,13 @@
                   "kind": "scalar"
                 }
               },
+              "type": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -2282,6 +2300,21 @@
               }
             },
             "relations": {
+              "attachments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "eventId"
+                  ]
+                },
+                "to": {
+                  "model": "EventAttachment",
+                  "namespace": "public"
+                }
+              },
               "calendar": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -2357,6 +2390,9 @@
                 "id": {
                   "column": "id"
                 },
+                "link": {
+                  "column": "link"
+                },
                 "linkedCalendarId": {
                   "column": "linkedCalendarId"
                 },
@@ -2381,6 +2417,9 @@
                 "title": {
                   "column": "title"
                 },
+                "type": {
+                  "column": "type"
+                },
                 "updatedAt": {
                   "column": "updatedAt"
                 },
@@ -2390,6 +2429,97 @@
               },
               "namespaceId": "public",
               "table": "event"
+            }
+          },
+          "EventAttachment": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "eventId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "mime": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "size": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "event": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "eventId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Event",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "eventId": {
+                  "column": "eventId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "mime": {
+                  "column": "mime"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "size": {
+                  "column": "size"
+                }
+              },
+              "namespaceId": "public",
+              "table": "eventAttachment"
             }
           },
           "EventReminderPreference": {
@@ -4034,6 +4164,11 @@
                   "expression": "array_position(\"tags\", NULL) IS NULL",
                   "name": "event_tags_elem_not_null_aecbe9e2",
                   "prefix": "event_tags_elem_not_null"
+                },
+                {
+                  "expression": "type IS NULL OR type IN ('spectacle', 'sortie', 'vacances', 'visio', 'travail')",
+                  "name": "event_type_223f83b0",
+                  "prefix": "event_type"
                 }
               ],
               "columns": {
@@ -4091,6 +4226,15 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "link": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": ""
+                  },
+                  "nullable": false
+                },
                 "linkedCalendarId": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -4144,6 +4288,11 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -4285,6 +4434,85 @@
                   ]
                 }
               ]
+            },
+            "eventAttachment": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "eventId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "mime": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "size": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "eventAttachment_eventId_idx_6a266d47"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "eventId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "eventAttachment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "event"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "eventId"
+                  ],
+                  "name": "eventAttachment_eventId_idx_6a266d47",
+                  "prefix": "eventAttachment_eventId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "eventReminderPreference": {
               "checks": [
@@ -6928,7 +7156,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "37e5c8f0d65262c364067a164556bb44975a6a9cb3833bea79f593acb3d28de0"
+    "storageHash": "a0747993480de4ec251e16294c62603d14fdc914fad54aebed08d62ada953156"
   },
   "capabilities": {
     "postgres": {

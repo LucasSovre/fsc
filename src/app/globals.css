@@ -164,3 +164,15 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 @media (min-width: 520px) { .account-menu { top: 116px; } }
 @media (max-width: 359px) { main { padding-inline: 16px; } .app-header { padding-inline: 16px; } .event-card { padding: 16px; } .month-toolbar h2 { font-size: 16px; } .calendar-grid { border-spacing: 2px 8px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+.type-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.type-option { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 2px solid var(--color-border); border-radius: 22px; background: var(--color-neutral); cursor: pointer; }
+.type-option input { position: absolute; opacity: 0; }
+.type-option:has(input:checked) { border-color: var(--color-ink); font-weight: 650; }
+.type-option:has(input:focus-visible) { outline: 3px solid #62528e; outline-offset: 3px; }
+.event-type { display: inline-block; margin: 12px 0 0 10px; font-size: 12px; font-weight: 700; }
+.event-join { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; }
+.type-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.type-filter a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 2px solid var(--color-border); border-radius: 22px; }
+.type-filter a[aria-current="true"] { border-color: var(--color-ink); font-weight: 650; }
+.tickets ul { list-style: none; padding: 0; display: grid; gap: 16px; }
+.tickets img { display: block; max-width: 100%; max-height: 360px; border-radius: 12px; }

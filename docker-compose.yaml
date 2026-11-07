@@ -18,6 +18,7 @@ x-fsc-environment: &fsc-environment
   VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
   VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
   VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@example.com}
+  UPLOAD_DIR: /data/uploads
 
 services:
   db:
@@ -50,6 +51,8 @@ services:
     environment: *fsc-environment
     ports:
       - "${APP_PORT:-3000}:3000"
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -85,3 +88,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads:
