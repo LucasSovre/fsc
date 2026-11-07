@@ -56,6 +56,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
       })}</tr>)}
     </tbody></table>
     </MonthSwipe>
+    <p className="grid-legend"><span><i className="day-dot" data-visibility="common" aria-hidden="true" /> Commun</span><span><i className="day-dot" data-visibility="solo" aria-hidden="true" /> Solo</span></p>
     <div className="day-heading"><h2>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`))}</h2>
       <Link className="button-link day-add" href={`/evenements/nouveau?jour=${day}`}>Créer<span className="sr-only"> un événement ce jour</span></Link></div>
     <div className="travel-detail">{travelDays.filter(travel => travel.day === day).map(travel => <p className="travel-person" key={travel.userId}>{travel.name} en déplacement</p>)}</div>
