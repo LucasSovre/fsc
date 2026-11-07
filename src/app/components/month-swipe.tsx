@@ -18,7 +18,8 @@ export function MonthSwipe({ previousHref, nextHref, children }: { previousHref:
     const dx = event.clientX - start.x, dy = event.clientY - start.y;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5 || event.timeStamp - start.started > 1000) return;
     suppressClickUntil.current = Date.now() + 350;
-    startTransition(() => router.push(dx < 0 ? nextHref : previousHref, { scroll: false }));
+    const forward = dx < 0;
+    startTransition(() => router.push(forward ? nextHref : previousHref, { scroll: false, transitionTypes: [forward ? "swipe-next" : "swipe-prev"] }));
   }} onClickCapture={event => {
     if (Date.now() < suppressClickUntil.current) { event.preventDefault(); event.stopPropagation(); }
   }}>{children}</div>;
