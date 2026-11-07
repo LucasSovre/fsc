@@ -13,5 +13,5 @@ export function ConsentForm() {
       else if (result.data?.url) window.location.assign(result.data.url);
     } catch { setError("Autorisation impossible. Réessaie depuis Claude."); setPending(false); }
   }
-  return <><button disabled={pending || !ready} onClick={() => consent(true)}>Autoriser</button>{" "}<button disabled={pending || !ready} onClick={() => consent(false)}>Refuser</button>{error && <p role="alert">{error}</p>}</>;
+  return <><div className="consent-actions"><button disabled={pending || !ready} onClick={() => consent(true)}>Autoriser</button><button className="button-secondary" disabled={pending || !ready} onClick={() => consent(false)}>Refuser</button></div>{error && <p role="alert">{error}</p>}</>;
 }

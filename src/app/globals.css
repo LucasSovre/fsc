@@ -71,6 +71,9 @@ main { padding: 8px 24px 24px; min-width: 0; }
 .bottom-nav a { min-width: 0; height: 62px; }
 .bottom-nav svg { flex: 0 0 22px; width: 22px; height: 22px; aspect-ratio: 1; }
 button, .button-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; max-width: 100%; border: 1px solid transparent; border-radius: var(--radius-pill); padding: 12px 20px; background: var(--color-ink); color: white; font-size: 14px; font-weight: 600; line-height: 1.45; text-align: center; text-decoration: none; cursor: pointer; overflow-wrap: anywhere; transition: background-color 180ms ease-out; }
+button.button-secondary { background: var(--color-neutral); color: var(--color-ink); border-color: var(--color-border); }
+button.button-secondary:hover:not(:disabled), button.button-secondary:active:not(:disabled) { background: #e4e4e1; }
+.consent-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 button.button-danger { background: transparent; color: var(--color-error); border-color: var(--color-error); }
 button.button-danger:hover:not(:disabled), button.button-danger:active:not(:disabled) { background: #fceeee; }
 button:hover:not(:disabled), .button-link:hover { background: #42423e; }
@@ -135,8 +138,10 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 .calendar-grid td { padding: 0; text-align: center; }
 .calendar-grid a { position: relative; display: grid; place-items: center; width: 100%; max-width: 48px; aspect-ratio: 1; margin-inline: auto; border-radius: 50%; background: var(--color-neutral); text-decoration: none; font-size: 14px; }
 .day-dots { position: absolute; bottom: 14%; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 3px; line-height: 1; }
-.day-dots i { width: 6px; height: 6px; border-radius: 50%; background: #4f7d2c; }
-.day-dots i[data-visibility="solo"] { background: #62528e; }
+.day-dots i, .day-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #4f7d2c; }
+.day-dots i[data-visibility="solo"], .day-dot[data-visibility="solo"] { background: #62528e; }
+.grid-legend { display: flex; gap: 16px; margin: 4px 0 0; font-size: 13px; color: var(--color-muted); }
+.grid-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .day-dots b { font-size: 9px; font-weight: 700; }
 .calendar-grid a[aria-current="date"] .day-dots i { background: var(--color-common); }
 .calendar-grid a[aria-current="date"] .day-dots i[data-visibility="solo"] { background: var(--color-solo); }

@@ -10,7 +10,7 @@ export default async function Page() {
   const sources = await listLinkedCalendars(user.id);
   const canCommon = calendars.some(calendar => calendar.kind === "common");
   const format = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: profile.timeZone });
-  return <><h1>Calendriers liés</h1>
+  return <><p><Link href="/reglages">← Réglages</Link></p><h1>Calendriers liés</h1>
     <p className="page-intro">Ajoute le lien d’abonnement ICS d’un autre calendrier. FSC récupère ses créations, modifications et suppressions environ toutes les 15 minutes, tant que le worker fonctionne.</p>
     <p className="field-help">Les événements couvrent l’année passée et les deux années à venir. Les récurrences sont affichées comme des occurrences indépendantes. Les événements liés se modifient dans le calendrier source ; tes rappels restent personnalisables dans FSC.</p>
     <details><summary>Ajouter un calendrier lié</summary>
@@ -36,10 +36,9 @@ export default async function Page() {
         {source.enabled && <ActionForm action={refreshLinkedCalendarAction}><input type="hidden" name="id" value={source.id} /><button>Actualiser maintenant</button></ActionForm>}
         <ActionForm action={toggleLinkedCalendarAction}><input type="hidden" name="id" value={source.id} /><input type="hidden" name="enabled" value={source.enabled ? "false" : "true"} /><button>{source.enabled ? "Mettre en pause" : "Reprendre la synchronisation"}</button></ActionForm>
         <details><summary>Supprimer ce calendrier lié</summary><ActionForm action={removeLinkedCalendarAction}>
-          <input type="hidden" name="id" value={source.id} /><p><label><input name="confirm" type="checkbox" required /> Supprimer ce lien et tous ses événements importés dans FSC, avec leurs rappels. Le calendrier source restera intact.</label></p><button>Supprimer le calendrier lié</button>
+          <input type="hidden" name="id" value={source.id} /><p><label><input name="confirm" type="checkbox" required /> Supprimer ce lien et tous ses événements importés dans FSC, avec leurs rappels. Le calendrier source restera intact.</label></p><button className="button-danger">Supprimer le calendrier lié</button>
         </ActionForm></details>
       </> : <p className="field-help">Ce lien est géré par l’autre personne du calendrier commun.</p>}
     </section>)}
-    <p><Link href="/calendrier">Revenir au calendrier</Link></p>
   </>;
 }

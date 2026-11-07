@@ -11,7 +11,7 @@ export function EventReminderFields({ initial = { mode: "inherit" }, defaults }:
   const unit = minutes > 0 && minutes % 1440 === 0 ? 1440 : minutes > 0 && minutes % 60 === 0 ? 60 : 1;
   return <fieldset className="event-reminder-fields"><legend>Mon rappel</legend>
     <p className="field-help">Ce choix s’applique uniquement à toi, même pour un événement commun.</p>
-    <p><label>Rappel pour cet événement<select name="eventReminderMode" value={mode} onChange={event => setMode(event.target.value as EventReminderChoice["mode"])}>
+    <p><label>Quand être prévenu ?<select name="eventReminderMode" value={mode} onChange={event => setMode(event.target.value as EventReminderChoice["mode"])}>
       <option value="inherit">Utiliser mes réglages habituels</option>
       <option value="off">Aucun rappel</option>
       <option value="custom">Personnaliser ce rappel</option>
