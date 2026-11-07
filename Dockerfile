@@ -14,25 +14,14 @@ FROM dependencies AS source
 COPY . .
 RUN node node_modules/prisma/dist/prisma.js contract emit
 
-FROM source AS migrate
-USER node
-CMD ["node", "node_modules/prisma/dist/prisma.js", "db", "migrate", "--no-interactive"]
-
-FROM source AS worker
-ENV NODE_ENV=production
-USER node
-CMD ["node", "--import", "tsx", "scripts/worker.ts"]
-
 FROM source AS builder
 RUN mkdir -p public && bun run build
 
-FROM base AS runner
+FROM builder AS runner
 ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     PORT=3000
-COPY --from=builder --chown=node:node /app/.next/standalone ./
-COPY --from=builder --chown=node:node /app/.next/static ./.next/static
-COPY --from=builder --chown=node:node /app/public ./public
+RUN chown -R node:node .next
 USER node
 EXPOSE 3000
-CMD ["node", "server.js"]
+ENTRYPOINT ["bash", "scripts/entrypoint.sh"]

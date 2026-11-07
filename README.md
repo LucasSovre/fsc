@@ -19,8 +19,8 @@ Pas de création de séries récurrentes natives, de CalDAV ni de synchronisatio
 
 ## Images publiées sur GitHub Container Registry
 
-Le workflow `.github/workflows/publish-container.yml` construit et publie les trois
-cibles du Dockerfile sur GHCR, sans secret ni variable à créer : il utilise le
+Le workflow `.github/workflows/publish-container.yml` construit et publie l’image
+unique du Dockerfile sur GHCR, sans secret ni variable à créer : il utilise le
 `GITHUB_TOKEN` fourni automatiquement et les permissions déclarées dans le workflow.
 Le nom du dépôt et sa branche principale sont détectés automatiquement.
 
@@ -29,15 +29,12 @@ Publication à chaque push sur la branche principale, sur les tags `v*`, ou depu
 publient pas automatiquement. Les images Linux `amd64` partagent le package
 `ghcr.io/<propriétaire>/<dépôt>`, en minuscules :
 
-| Service | Branche principale | Tag Git `v1.2.3` | Commit précis |
+| Image | Branche principale | Tag Git `v1.2.3` | Commit précis |
 | --- | --- | --- | --- |
-| App | `latest` | `v1.2.3` | `sha-<SHA complet>` |
-| Worker | `worker` | `worker-v1.2.3` | `worker-sha-<SHA complet>` |
-| Migrations | `migrate` | `migrate-v1.2.3` | `migrate-sha-<SHA complet>` |
+| FSC (app + worker + migrations) | `latest` | `v1.2.3` | `sha-<SHA complet>` |
 
 Un lancement manuel hors branche principale produit les tags de commit, sans
-remplacer `latest`, `worker` ou `migrate`. Utiliser les trois images du même commit
-pour garder l’application, le worker et les migrations alignés. Les paramètres de
+remplacer `latest`. Les paramètres de
 base de données, SMTP et authentification restent des variables d’exécution :
 aucun n’est requis pour construire ou publier les images.
 
@@ -61,7 +58,7 @@ Configurer au minimum :
 ```sh
 docker compose up -d --build
 docker compose ps
-docker compose logs -f app worker migrate
+docker compose logs -f app
 ```
 
 Le mode production des images Docker accepte HTTP sur `localhost`, `127.0.0.1` et
@@ -69,8 +66,8 @@ Le mode production des images Docker accepte HTTP sur `localhost`, `127.0.0.1` e
 connecter Claude. Le message « Next.js Ready » affiche l’écoute interne HTTP du
 conteneur ; le reverse proxy assure le HTTPS public.
 
-Compose démarre PostgreSQL, applique la migration initiale, puis démarre l’application et
-un worker unique. Une migration en échec empêche leur démarrage. L’application est exposée
+Compose démarre PostgreSQL, démarre le conteneur `app` qui applique les migrations, puis lance l’application et
+un worker unique dans le même conteneur. Une migration en échec empêche leur démarrage ; ne pas lancer plusieurs réplicas de `app`. L’application est exposée
 sur le port `3000` de l’hôte par défaut (`APP_PORT`) ; la base reste dans le réseau Docker. Les images tournent
 avec un utilisateur non-root. Les identifiants ne sont pas nécessaires au build.
 
@@ -91,7 +88,7 @@ accès au terminal peut créer un compte ; les invitations ne créent pas de com
 Avec Docker, après le démarrage de la base et les migrations :
 
 ```sh
-docker compose exec worker node --import tsx scripts/create-account.ts --email alice@example.com --name Alice
+docker compose exec app node --import tsx scripts/create-account.ts --email alice@example.com --name Alice
 ```
 
 En développement local (connexion PostgreSQL configurée dans `.env`) :
@@ -133,7 +130,7 @@ du proxy : elles contiennent des secrets.
 
 `GET /health` vérifie la configuration de production et l’accès au schéma. Le worker
 met à jour un heartbeat PostgreSQL ; son healthcheck échoue après deux minutes sans
-passage réussi. Ne pas lancer plusieurs réplicas du worker.
+passage réussi. Ne pas lancer plusieurs réplicas de `app` (il embarque le worker).
 
 ### E-mails de développement
 
@@ -225,7 +222,7 @@ personnelles correspondantes et annule les rappels en attente.
 
 Avant d’utiliser cette fonctionnalité sur une installation existante, appliquer les
 migrations (`bun run migrate` en local, ou la procédure Docker ci-dessus), puis
-redémarrer l’application et le worker.
+redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
 
 Pour une journée entière, le rappel vise 9 h le premier jour dans le fuseau du
 destinataire, moins son délai. En mode Tags sélectionnés, un seul tag correspondant
@@ -312,7 +309,7 @@ locales et réservées sont refusées. Aucun cookie ou identifiant de compte dis
 n’est transmis. Les téléchargements sont limités en temps et en taille.
 
 La migration `linked_calendars` est additive. Appliquer `bun run migrate` avant de
-redémarrer l’application et le worker, ou suivre la procédure Docker habituelle.
+redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
 Les tests serveur utilisent des flux de test, sans appeler de calendrier privé réel.
 
 ## Todo et récapitulatif quotidien
@@ -347,7 +344,7 @@ le récapitulatif du lendemain.
 
 La migration `todos_daily_digest` ajoute les tables Todo et leur journal d’envoi,
 ainsi que la préférence personnelle. Appliquer `bun run migrate` avant de
-redémarrer l’application et le worker, ou suivre la procédure Docker habituelle.
+redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
 
 ## Claude et MCP
 
@@ -466,5 +463,5 @@ pg_restore --no-owner --dbname="$POSTGRES_DB" fsc.dump
 
 Restaurer aussi `BETTER_AUTH_SECRET` et les clés VAPID pour conserver la validité des
 sessions/clients chiffrés et abonnements push. Après restauration, exécuter les migrations
-en attente avant de redémarrer application et worker. Ne pas remettre automatiquement
+en attente avant de redémarrer l’application (en Docker, le conteneur `app` les applique au démarrage). Ne pas remettre automatiquement
 en attente des rappels `dispatching`, `uncertain` ou `sent`.
