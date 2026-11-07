@@ -177,7 +177,7 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 .visibility-check path { fill: none; stroke: white; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .visibility-option:has(input:checked) .visibility-check { display: block; }
 .visibility-field > p { font-size: 13px; color: var(--color-muted); }
-.sticky-submit { position: sticky; bottom: calc(108px + env(safe-area-inset-bottom)); z-index: 5; margin: 24px 0 0; padding-block: 12px; background: linear-gradient(transparent, var(--color-surface) 30%); }
+.sticky-submit { position: sticky; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 5; margin: 24px 0 0; padding-block: 12px; background: linear-gradient(transparent, var(--color-surface) 30%); }
 .sticky-submit button { width: 100%; }
 .field-help { font-size: 13px; color: var(--color-muted); }
 .reminder-delay { display: grid; grid-template-columns: minmax(0, 1fr) minmax(100px, .8fr); align-items: end; gap: 12px; }

@@ -21,6 +21,7 @@ const isActive = (pathname: string, href: string) => {
 
 export function Navigation() {
   const pathname = usePathname();
+  if (pathname === "/evenements/nouveau" || pathname.endsWith("/modifier")) return null;
   return <nav className="bottom-nav" aria-label="Navigation principale">
     {destinations.map(({ href, label, icon }) => <Link key={href} href={href} aria-current={isActive(pathname, href) ? "page" : undefined}>
       <Icon name={icon} /><span>{label}</span>
