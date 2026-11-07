@@ -1,10 +1,12 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireUser } from "../server/session";
+import { assertAdmin, requireUser } from "../server/session";
+import { rows } from "../server/database";
+import { saveSmtpConfig } from "../server/smtp";
 import { acceptInvitation, createInvitation, deleteEvent, leaveCalendar, revokeFeed, revokeInvitation, rotateFeed, saveEvent, saveEventReminder, savePreferences } from "../server/calendar";
 import { errorMessage, DomainError } from "../server/validation";
-import { sendMail } from "../server/mail";
+import { sendMail, testSmtp } from "../server/mail";
 import { addPushSubscription, removePushSubscription } from "../server/push";
 import { revokeConnection } from "../server/oauth";
 import { completeTodo, deleteTodo, saveTodo, saveTodoEmailPreference } from "../server/todo";
@@ -70,6 +72,25 @@ export async function preferencesAction(_: ActionState, form: FormData) {
       reminderMode: text(form, "reminderMode"), selectedTags: form.getAll("selectedTags").map(String),
     });
     return { message: "Réglages enregistrés." };
+  });
+}
+export async function smtpAction(_: ActionState, form: FormData) {
+  return run(async userId => {
+    await assertAdmin(userId);
+    await saveSmtpConfig({
+      host: text(form, "host"), port: Number(text(form, "port")), secure: checked(form, "secure"),
+      user: text(form, "user"), password: text(form, "password"), from: text(form, "from"),
+    });
+    return { message: "Configuration SMTP enregistrée." };
+  });
+}
+export async function smtpTestAction() {
+  return run(async userId => {
+    await assertAdmin(userId);
+    const [user] = await rows<{ email: string }>('SELECT email FROM "user" WHERE id=$1', [userId]);
+    try { await testSmtp(user.email); }
+    catch (error) { throw new DomainError(`Le test SMTP a échoué : ${error instanceof Error ? error.message : "erreur inconnue"}`); }
+    return { message: `E-mail de test envoyé à ${user.email}.` };
   });
 }
 export async function inviteAction(_: ActionState, form: FormData) {

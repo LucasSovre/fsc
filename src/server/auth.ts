@@ -6,6 +6,7 @@ import { pool } from "./database";
 import { authSchemaOptions, provider, cimdPlugin } from "./auth-options";
 import { assertProductionConfig, baseURL, mcpResource } from "./config";
 import { sendMail } from "./mail";
+import { isMailConfigured } from "./smtp";
 
 const createAuth = (allowSignUp = false) => betterAuth({
   ...authSchemaOptions,
@@ -19,7 +20,7 @@ const createAuth = (allowSignUp = false) => betterAuth({
   },
   emailVerification: {
     sendOnSignUp: true, sendOnSignIn: true, autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => sendMail(user.email, "FSC — vérifie ton adresse", `Vérifie ton adresse e-mail : ${url}`),
+    sendVerificationEmail: async ({ user, url }) => allowSignUp && !(await isMailConfigured()) ? undefined : sendMail(user.email, "FSC — vérifie ton adresse", `Vérifie ton adresse e-mail : ${url}`),
   },
   session: { cookieCache: { enabled: false } },
   plugins: allowSignUp ? [] : [provider, cimdPlugin, {

@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5f206f77d9f5d8ad9df5e71e498947e12c60d66e0c1580ed06e1039d5662e39a'>;
+  StorageHashBase<'e87018f296c27b23b5dfd7013a7753d46b05ef774ee2d7eed6470d96a9c2c165'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -308,6 +308,11 @@ export type StorageColumnInputTypes = ColumnTypesFromStorage<
 >;
 
 export namespace Models {
+  export type public_AppAdmin = {
+    userId: FieldOutputTypes['public']['AppAdmin']['userId'];
+    user: public_AuthUser;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_AuthAccount = {
     accessToken: FieldOutputTypes['public']['AuthAccount']['accessToken'];
     accessTokenExpiresAt: FieldOutputTypes['public']['AuthAccount']['accessTokenExpiresAt'];
@@ -640,6 +645,17 @@ export namespace Models {
     user: public_AuthUser;
     readonly [RelationKeys]?: 'event' | 'user';
   };
+  export type public_SmtpSetting = {
+    encryptedPassword: FieldOutputTypes['public']['SmtpSetting']['encryptedPassword'];
+    from: FieldOutputTypes['public']['SmtpSetting']['from'];
+    host: FieldOutputTypes['public']['SmtpSetting']['host'];
+    id: FieldOutputTypes['public']['SmtpSetting']['id'];
+    port: FieldOutputTypes['public']['SmtpSetting']['port'];
+    secure: FieldOutputTypes['public']['SmtpSetting']['secure'];
+    updatedAt: FieldOutputTypes['public']['SmtpSetting']['updatedAt'];
+    user: FieldOutputTypes['public']['SmtpSetting']['user'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_Tag = {
     catalogId: FieldOutputTypes['public']['Tag']['catalogId'];
     id: FieldOutputTypes['public']['Tag']['id'];
@@ -688,6 +704,7 @@ export namespace Models {
 
 export declare const models: {
   public: {
+    AppAdmin: Models.public_AppAdmin;
     AuthAccount: Models.public_AuthAccount;
     AuthOauthAccessToken: Models.public_AuthOauthAccessToken;
     AuthOauthClient: Models.public_AuthOauthClient;
@@ -712,6 +729,7 @@ export declare const models: {
     Profile: Models.public_Profile;
     PushSubscription: Models.public_PushSubscription;
     Reminder: Models.public_Reminder;
+    SmtpSetting: Models.public_SmtpSetting;
     Tag: Models.public_Tag;
     Todo: Models.public_Todo;
     TodoDigest: Models.public_TodoDigest;
@@ -838,6 +856,33 @@ type ContractBase = Omit<
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'account';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly appAdmin: {
+              columns: {
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['userId'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'appAdmin';
                     readonly columns: readonly ['userId'];
                   };
                   readonly target: {
@@ -2994,6 +3039,68 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly smtpSetting: {
+              columns: {
+                readonly encryptedPassword: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly from: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly host: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly port: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly secure: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly user: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
             readonly tag: {
               columns: {
                 readonly catalogId: {
@@ -3414,6 +3521,7 @@ type ContractBase = Omit<
   readonly targetFamily: 'sql';
   readonly roots: {
     readonly account: { readonly namespace: 'public' & NamespaceId; readonly model: 'AuthAccount' };
+    readonly appAdmin: { readonly namespace: 'public' & NamespaceId; readonly model: 'AppAdmin' };
     readonly calendar: { readonly namespace: 'public' & NamespaceId; readonly model: 'Calendar' };
     readonly catalog: { readonly namespace: 'public' & NamespaceId; readonly model: 'Catalog' };
     readonly delivery: { readonly namespace: 'public' & NamespaceId; readonly model: 'Delivery' };
@@ -3471,6 +3579,10 @@ type ContractBase = Omit<
     };
     readonly reminder: { readonly namespace: 'public' & NamespaceId; readonly model: 'Reminder' };
     readonly session: { readonly namespace: 'public' & NamespaceId; readonly model: 'AuthSession' };
+    readonly smtpSetting: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SmtpSetting';
+    };
     readonly tag: { readonly namespace: 'public' & NamespaceId; readonly model: 'Tag' };
     readonly todo: { readonly namespace: 'public' & NamespaceId; readonly model: 'Todo' };
     readonly todoDigest: {
@@ -3492,6 +3604,33 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly AppAdmin: {
+            readonly fields: {
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AuthUser';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'appAdmin';
+              readonly namespaceId: 'public';
+              readonly fields: { readonly userId: { readonly column: 'userId' } };
+            };
+          };
           readonly AuthAccount: {
             readonly fields: {
               readonly accessToken: {
@@ -5507,6 +5646,61 @@ type ContractBase = Omit<
                 readonly sentAt: { readonly column: 'sentAt' };
                 readonly status: { readonly column: 'status' };
                 readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
+          readonly SmtpSetting: {
+            readonly fields: {
+              readonly encryptedPassword: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly from: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly host: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly port: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly secure: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly user: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'smtpSetting';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly encryptedPassword: { readonly column: 'encryptedPassword' };
+                readonly from: { readonly column: 'from' };
+                readonly host: { readonly column: 'host' };
+                readonly id: { readonly column: 'id' };
+                readonly port: { readonly column: 'port' };
+                readonly secure: { readonly column: 'secure' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly user: { readonly column: 'user' };
               };
             };
           };

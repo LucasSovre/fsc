@@ -1,8 +1,8 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { request } from "node:https";
 import { BlockList, isIP } from "node:net";
 import { DomainError } from "./validation";
+import { decryptSecret, encryptSecret } from "./secret";
 
 export const MAX_CALENDAR_BYTES = 2 * 1024 * 1024;
 const blocked = new BlockList();
@@ -24,22 +24,10 @@ export function calendarSourceURL(value: string) {
     throw new DomainError("Le calendrier doit utiliser un lien HTTPS public, sans identifiants ni port personnalisé.");
   return url;
 }
-function encryptionKey() {
-  const secret = process.env.BETTER_AUTH_SECRET;
-  if (!secret || secret.length < 32) throw new DomainError("La clé de chiffrement de l’application n’est pas configurée.");
-  return createHash("sha256").update(`fsc-linked-calendars:${secret}`).digest();
-}
-export function encryptCalendarURL(value: string) {
-  const iv = randomBytes(12), cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
-  const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
-  return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString("base64url");
-}
+export const encryptCalendarURL = encryptSecret;
 export function decryptCalendarURL(value: string) {
-  try {
-    const data = Buffer.from(value, "base64url"), decipher = createDecipheriv("aes-256-gcm", encryptionKey(), data.subarray(0, 12));
-    decipher.setAuthTag(data.subarray(12, 28));
-    return Buffer.concat([decipher.update(data.subarray(28)), decipher.final()]).toString("utf8");
-  } catch { throw new DomainError("Le lien chiffré est illisible. Supprime ce calendrier lié puis ajoute-le à nouveau."); }
+  try { return decryptSecret(value); }
+  catch { throw new DomainError("Le lien chiffré est illisible. Supprime ce calendrier lié puis ajoute-le à nouveau."); }
 }
 export async function fetchCalendarSource(value: string): Promise<string> {
   const controller = new AbortController();

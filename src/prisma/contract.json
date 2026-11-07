@@ -8,6 +8,10 @@
       "model": "AuthAccount",
       "namespace": "public"
     },
+    "appAdmin": {
+      "model": "AppAdmin",
+      "namespace": "public"
+    },
     "calendar": {
       "model": "Calendar",
       "namespace": "public"
@@ -92,6 +96,10 @@
       "model": "AuthSession",
       "namespace": "public"
     },
+    "smtpSetting": {
+      "model": "SmtpSetting",
+      "namespace": "public"
+    },
     "tag": {
       "model": "Tag",
       "namespace": "public"
@@ -125,6 +133,44 @@
     "namespaces": {
       "public": {
         "models": {
+          "AppAdmin": {
+            "fields": {
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AuthUser",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "appAdmin"
+            }
+          },
           "AuthAccount": {
             "fields": {
               "accessToken": {
@@ -3364,6 +3410,100 @@
               "table": "reminder"
             }
           },
+          "SmtpSetting": {
+            "fields": {
+              "encryptedPassword": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "from": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "host": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "port": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "secure": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "user": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "encryptedPassword": {
+                  "column": "encryptedPassword"
+                },
+                "from": {
+                  "column": "from"
+                },
+                "host": {
+                  "column": "host"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "port": {
+                  "column": "port"
+                },
+                "secure": {
+                  "column": "secure"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "user": {
+                  "column": "user"
+                }
+              },
+              "namespaceId": "public",
+              "table": "smtpSetting"
+            }
+          },
           "Tag": {
             "fields": {
               "catalogId": {
@@ -3882,6 +4022,44 @@
               "primaryKey": {
                 "columns": [
                   "id"
+                ]
+              },
+              "uniques": []
+            },
+            "appAdmin": {
+              "columns": {
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "primaryKey": true
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "appAdmin"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "userId"
                 ]
               },
               "uniques": []
@@ -6537,6 +6715,76 @@
                 }
               ]
             },
+            "smtpSetting": {
+              "checks": [
+                {
+                  "expression": "port >= 1 AND port <= 65535",
+                  "name": "smtp_port_c9893d7c",
+                  "prefix": "smtp_port"
+                }
+              ],
+              "columns": {
+                "encryptedPassword": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "from": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "host": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "port": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "secure": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "user": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "tag": {
               "columns": {
                 "catalogId": {
@@ -7054,7 +7302,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5f206f77d9f5d8ad9df5e71e498947e12c60d66e0c1580ed06e1039d5662e39a"
+    "storageHash": "e87018f296c27b23b5dfd7013a7753d46b05ef774ee2d7eed6470d96a9c2c165"
   },
   "capabilities": {
     "postgres": {

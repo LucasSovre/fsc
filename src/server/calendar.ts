@@ -4,6 +4,7 @@ import type { Calendar, Event, EventReminderChoice, Profile, Tag } from "./types
 import { DomainError, dateValue, eventDates, eventReminderSchema, eventSchema, localDate, preferencesSchema, tagKey, tagLabel, zoneSchema } from "./validation";
 import { reconcileReminders } from "./reminder-plan";
 import { baseURL } from "./config";
+import { isMailConfigured } from "./smtp";
 
 export const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
 const secret = () => randomBytes(32).toString("base64url");
@@ -89,7 +90,7 @@ export async function getEventReminder(userId: string, eventId: string): Promise
   });
 }
 async function validateReminderChannels(db: Connection, userId: string, emailEnabled: boolean, pushEnabled: boolean) {
-  if (emailEnabled && !process.env.SMTP_HOST) throw new DomainError("Le service e-mail n’est pas configuré.");
+  if (emailEnabled && !(await isMailConfigured())) throw new DomainError("Le service e-mail n’est pas configuré.");
   if (pushEnabled && (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY)) throw new DomainError("Les notifications web ne sont pas configurées.");
   if (pushEnabled && !(await rows('SELECT id FROM "pushSubscription" WHERE "userId"=$1', [userId], db)).length)
     throw new DomainError("Active d’abord les notifications sur cet appareil depuis les réglages.");

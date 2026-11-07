@@ -17,15 +17,21 @@ async function hiddenPassword(label: string) {
 async function main() {
   const { values } = parseArgs({ options: {
     email: { type: "string" }, name: { type: "string" },
-    "password-stdin": { type: "boolean" }, help: { type: "boolean" },
+    "password-stdin": { type: "boolean" }, admin: { type: "boolean" }, help: { type: "boolean" },
   } });
   if (values.help) {
-    console.log("Créer un compte : --email personne@example.com --name Prénom [--password-stdin]");
+    console.log("Créer un compte : --email personne@example.com --name Prénom [--password-stdin] [--admin]");
+    console.log("Promouvoir un compte existant : --email personne@example.com --admin");
     return;
   }
   const email = z.email().max(254).parse(values.email?.trim().toLowerCase());
-  const name = z.string().trim().min(1).max(100).parse(values.name);
   const existing = await pool.query('SELECT id FROM "user" WHERE email=$1', [email]);
+  if (existing.rowCount && values.admin) {
+    await pool.query('INSERT INTO "appAdmin" ("userId") VALUES ($1) ON CONFLICT DO NOTHING', [existing.rows[0].id]);
+    console.log("Compte promu administrateur.");
+    return;
+  }
+  const name = z.string().trim().min(1).max(100).parse(values.name);
   if (existing.rowCount) throw new Error("Un compte existe déjà avec cette adresse.");
   let password: string;
   if (values["password-stdin"]) {
@@ -45,6 +51,12 @@ async function main() {
   }
   z.string().min(12).max(128).parse(password);
   await createCLIAuth().api.signUpEmail({ body: { email, name, password, callbackURL: "/" } });
+  if (values.admin) {
+    await pool.query('UPDATE "user" SET "emailVerified"=true WHERE email=$1', [email]);
+    await pool.query('INSERT INTO "appAdmin" ("userId") SELECT id FROM "user" WHERE email=$1', [email]);
+    console.log("Compte administrateur créé et vérifié. Configure le SMTP depuis les réglages.");
+    return;
+  }
   console.log("Compte créé. Consulte l’e-mail de vérification avant de te connecter.");
 }
 
@@ -55,6 +67,6 @@ catch (error) {
     ? "Paramètres invalides : --email valide, --name requis, mot de passe de 12 à 128 caractères."
     : error instanceof Error && ["Un compte existe déjà avec cette adresse.", "Entrée trop longue.", "Utilise --password-stdin sans terminal interactif.", "Les mots de passe ne correspondent pas."].includes(error.message)
       ? error.message
-      : "Création impossible. Vérifie les paramètres, la base et le SMTP. Si le compte existe déjà, utilise la vérification d’adresse à la connexion.");
+      : "Création impossible. Vérifie les paramètres, la base et la configuration SMTP. Si le compte existe déjà, utilise la vérification d’adresse à la connexion.");
   process.exitCode = 1;
 } finally { await pool.end(); }

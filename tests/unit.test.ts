@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { dateValue, eventDates, eventReminderSchema, eventSchema, instant, tagKey, todoSchema } from "../src/server/validation";
+import { dateValue, eventDates, eventReminderSchema, eventSchema, instant, smtpSchema, tagKey, todoSchema } from "../src/server/validation";
+import { decryptSecret, encryptSecret } from "../src/server/secret";
 import { reminderPlan } from "../src/server/reminder-plan";
 import { calendarICS } from "../src/server/ics";
 import type { Event, Profile } from "../src/server/types";
@@ -198,5 +199,23 @@ describe("validation et rappels", () => {
     expect(data).toContain("DTEND;VALUE=DATE:20270103");
     expect(data.match(/\r\nBEGIN:VEVENT/g)?.length).toBe(1);
     expect(data).toContain("SEQUENCE:2");
+  });
+});
+describe("Configuration SMTP", () => {
+  const valid = { host: "smtp.example.com", port: 587, secure: false, user: "", password: "", from: "FSC <fsc@example.com>" };
+  test("accepte une configuration valide et applique les valeurs par défaut", () => {
+    expect(smtpSchema.parse({ host: " smtp.example.com ", port: 465, secure: true, from: "fsc@example.com" })).toMatchObject({ host: "smtp.example.com", user: "", password: "" });
+  });
+  test("refuse hôte vide, port invalide et expéditeur vide", () => {
+    expect(smtpSchema.safeParse({ ...valid, host: " " }).success).toBe(false);
+    expect(smtpSchema.safeParse({ ...valid, port: 0 }).success).toBe(false);
+    expect(smtpSchema.safeParse({ ...valid, port: 70000 }).success).toBe(false);
+    expect(smtpSchema.safeParse({ ...valid, from: "" }).success).toBe(false);
+  });
+  test("chiffre le mot de passe de façon réversible", () => {
+    process.env.BETTER_AUTH_SECRET = "x".repeat(40);
+    const encrypted = encryptSecret("mot-de-passe-smtp");
+    expect(encrypted).not.toContain("mot-de-passe-smtp");
+    expect(decryptSecret(encrypted)).toBe("mot-de-passe-smtp");
   });
 });
