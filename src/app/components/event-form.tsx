@@ -23,6 +23,7 @@ export function EventForm({ event, zone, tags, canCommon, creator, day, reminder
     {event && <><input type="hidden" name="id" value={event.id} /><input type="hidden" name="version" value={event.version} /></>}
     <p><label>Titre <input name="title" required maxLength={300} defaultValue={event?.title} /></label></p>
     <EventDates initial={{ allDay: event?.allDay ?? false, start: start.toString({ smallestUnit: "minute" }), end: end.toString({ smallestUnit: "minute" }), startDate, endDate, timeZone: tz }} />
+    <details className="form-more" open={!!event && !!(event.location || event.description || event.tags.length || reminder?.mode === "custom")}><summary>Plus d’options : lieu, description, tags, rappel</summary>
     <p><label>Lieu <input name="location" maxLength={500} defaultValue={event?.location} /></label></p>
     <p><label>Description <textarea name="description" maxLength={10000} defaultValue={event?.description} rows={5} /></label></p>
     <fieldset><legend>Tags (facultatifs)</legend>
@@ -31,6 +32,7 @@ export function EventForm({ event, zone, tags, canCommon, creator, day, reminder
       <p>Les noms de tags sont partagés dans le couple. Les événements solo associés restent privés.</p>
     </fieldset>
     <EventReminderFields initial={reminder} defaults={reminderDefaults} />
-    <button type="submit">{event ? "Enregistrer les modifications" : "Créer l’événement"}</button>
+    </details>
+    <p className="sticky-submit"><button type="submit">{event ? "Enregistrer les modifications" : "Créer l’événement"}</button></p>
   </ActionForm>;
 }

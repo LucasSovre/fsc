@@ -12,8 +12,9 @@ export function EventDates({ initial }: { initial: { allDay: boolean; start: str
     </> : <>
       <p><label>Début <input type="datetime-local" name="start" defaultValue={initial.start} required /></label></p>
       <p><label>Fin <input type="datetime-local" name="end" defaultValue={initial.end} required /></label></p>
-      <p><label>Fuseau horaire <input name="timeZone" defaultValue={initial.timeZone} required list="timezones" /></label></p>
-      <details><summary>Heure ambiguë lors d’un changement d’heure</summary><p>Indique ci-dessous les dates avec leur décalage UTC, par exemple 2026-10-25T02:30:00+02:00.</p>
+      <details><summary>Avancé : fuseau horaire et heure ambiguë</summary>
+        <p><label>Fuseau horaire <input name="timeZone" defaultValue={initial.timeZone} required list="timezones" /></label></p>
+        <p className="field-help">À renseigner seulement si l’heure tombe sur un changement d’heure : indique les dates avec leur décalage UTC, par exemple 2026-10-25T02:30:00+02:00.</p>
         <OffsetFields />
       </details>
     </>}
