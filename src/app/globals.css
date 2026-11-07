@@ -207,3 +207,4 @@ section > section { padding-top: 4px; border-top: 1px solid var(--color-border);
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
 .password-field { display: grid; gap: 8px; }
 .password-field button { justify-self: start; min-height: 44px; }
+fieldset:has(input[name="reminderMode"][value="all"]:checked) input[name="selectedTags"] { opacity: .45; }

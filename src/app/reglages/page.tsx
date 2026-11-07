@@ -39,15 +39,17 @@ export default async function Page() {
       {state.members.length > 0 && <ActionForm action={leaveAction}><p>En quittant, tu perds l’accès aux événements communs et leurs rappels. L’autre personne conserve le calendrier.</p><p><label><input type="checkbox" name="confirm" required /> Je confirme mon départ.</label></p><button className="button-danger">Quitter le calendrier commun</button></ActionForm>}
     </section>
     <section><h2>Calendriers du téléphone</h2><p>Exporte un fichier ou abonne-toi séparément à chaque agenda. Le téléphone choisit la fréquence d’actualisation et peut conserver des copies déjà téléchargées.</p><p>Le lien d’abonnement donne accès à cet agenda : conserve-le comme un secret. Renouvelle-le si tu l’as partagé par erreur.</p>
+      <details><summary>Afficher les exports et abonnements</summary>
       {state.calendars.map(c => <section key={c.id}><h3>{c.kind === "solo" ? "Solo" : "Commun"}</h3>
-        <p><a href={`/exports/${c.id}.ics`}>Télécharger le fichier .ics</a></p>
+        <p><a href={`/exports/${c.id}.ics`}>Télécharger le fichier .ics<span className="sr-only"> ({c.kind === "solo" ? "Solo" : "Commun"})</span></a></p>
         <ActionForm action={feedAction}><input type="hidden" name="calendarId" value={c.id} />
-          <p><button name="operation" value="rotate">Créer ou renouveler le lien d’abonnement</button></p>
-          <p><button className="button-danger" name="operation" value="revoke" disabled={!feeds.some(f => f.calendarId === c.id)}>Révoquer le lien d’abonnement</button></p>
+          <p><button name="operation" value="rotate">Créer ou renouveler le lien d’abonnement<span className="sr-only"> ({c.kind === "solo" ? "Solo" : "Commun"})</span></button></p>
+          <p><button className="button-danger" name="operation" value="revoke" disabled={!feeds.some(f => f.calendarId === c.id)}>Révoquer le lien d’abonnement<span className="sr-only"> ({c.kind === "solo" ? "Solo" : "Commun"})</span></button></p>
         </ActionForm>
       </section>)}
+      </details>
     </section>
-    {smtp.admin && <section><h2>E-mail (SMTP)</h2><p>Serveur utilisé pour les e-mails de connexion, les invitations et les rappels. Réservé aux administrateurs.</p>
+    {smtp.admin && <section><h2>E-mail (SMTP)</h2><details open={!smtp.config}><summary>Configuration du serveur</summary><p>Serveur utilisé pour les e-mails de connexion, les invitations et les rappels. Réservé aux administrateurs.</p>
       <ActionForm action={smtpAction}>
         <p><label>Hôte <input name="host" defaultValue={smtp.config?.host ?? ""} required /></label></p>
         <p><label>Port <input name="port" type="number" min={1} max={65535} defaultValue={smtp.config?.port ?? 587} required /></label></p>
@@ -61,6 +63,6 @@ export default async function Page() {
         <p>Envoie un e-mail de test à ton adresse avec la configuration enregistrée.</p>
         <button disabled={!smtp.config}>Tester le SMTP</button>
       </ActionForm>
-    </section>}
+    </details></section>}
   </>;
 }

@@ -86,6 +86,7 @@ test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et 
   await page.getByRole("button", { name: "Enregistrer mes réglages" }).click();
   await expect(page.getByText("Réglages enregistrés.", { exact: true })).toBeVisible();
   const soloSection = page.locator("section").filter({ has: page.getByRole("heading", { name: "Solo", exact: true }) }).last();
+  await page.getByText("Afficher les exports et abonnements").click();
   await soloSection.getByRole("button", { name: "Créer ou renouveler le lien d’abonnement" }).click();
   const feedLink = soloSection.locator('a[href*="/abonnements/"]');
   await expect(feedLink).toBeVisible();
