@@ -17,7 +17,7 @@
     "worker": "tsx scripts/worker.ts",
     "worker:health": "tsx scripts/worker-health.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test tests/unit.test.ts",
+    "test": "bun test tests/unit.test.ts tests/api.test.ts",
     "test:integration": "bun test tests/integration.test.ts",
     "test:e2e": "playwright test",
     "lint": "eslint",

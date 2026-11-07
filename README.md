@@ -137,7 +137,7 @@ location / {
 Le proxy doit **remplacer** les en-têtes d’adresse client, pas reprendre ceux envoyés
 par le navigateur. Ils servent à la limitation des tentatives de connexion. Garder le
 port de l’application inaccessible directement depuis Internet. Désactiver le cache
-sur les pages authentifiées, `/api/auth`, `/mcp`, `/exports` et `/abonnements`.
+sur les pages authentifiées, `/api/auth`, `/api/v1`, `/mcp`, `/exports` et `/abonnements`.
 Ne pas enregistrer les URL complètes d’invitations, abonnements ou reset dans les logs
 du proxy : elles contiennent des secrets.
 
@@ -426,6 +426,23 @@ précisé ce choix. Le schéma de l’outil refuse toute création sans visibili
 Les règles de tags, dates, accès et rappels sont identiques à celles du site.
 La révocation dans FSC supprime le consentement et tous les jetons de la connexion
 pour ce compte ; les connexions de l’autre membre restent valides.
+
+### API REST
+
+Chaque outil MCP a son équivalent REST sous `/api/v1`, avec les mêmes jetons OAuth
+(`Authorization: Bearer …`, audience `/mcp`), les mêmes scopes et les mêmes règles
+métier. La spécification OpenAPI 3.1, générée à partir des schémas des outils (elle ne
+peut donc pas diverger), est publique : `GET /api/v1/openapi.json`.
+
+- `GET` et `DELETE` : les champs d’entrée passent en paramètres de requête ; `POST` et `PUT` : corps JSON.
+- Les identifiants de ressource sont dans le chemin (`/events/{eventId}`). Pour modifier ou supprimer, passer la `version` lue (conflit : 409).
+- Les suppressions et révocations n’exigent pas `confirm` : l’appel explicite vaut confirmation.
+- Erreurs : `{ "error": "message" }` avec le statut HTTP (400, 401, 403, 404, 409).
+- Exemple : `curl -H "Authorization: Bearer $TOKEN" "https://TON-DOMAINE/api/v1/events?from=2027-01-01T00:00:00%2B01:00&to=2027-02-01T00:00:00%2B01:00"`.
+
+L’obtention d’un jeton passe par le fournisseur OAuth existant : les inscriptions
+dynamiques de clients restent désactivées, un client doit donc être autorisé (identité
+CIMD) comme pour Claude.
 
 Références : [Better Auth OAuth Provider](https://better-auth.com/docs/plugins/oauth-provider),
 [connexion Claude](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp),

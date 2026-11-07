@@ -45,7 +45,7 @@ jobs:
       - run: node node_modules/prisma/dist/prisma.js contract emit
       - run: bun run lint
       - run: bun run typecheck
-      - run: bun test tests/unit.test.ts
+      - run: bun test tests/unit.test.ts tests/api.test.ts
       - run: bun run build
 
   integration:
