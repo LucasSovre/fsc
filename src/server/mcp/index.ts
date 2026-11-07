@@ -1,14 +1,26 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { z } from "zod";
-import { auth, productionReady } from "./auth";
-import { listCalendars, listEvents, saveEvent } from "./calendar";
-import { eventSchema, errorMessage, DomainError } from "./validation";
-import { baseURL, mcpResource } from "./config";
+import { auth, productionReady } from "../auth";
+import { errorMessage, DomainError } from "../validation";
+import { baseURL, mcpResource, scopes } from "../config";
+import { registerAdminTools } from "./admin";
+import type { ToolContext } from "./context";
+import { registerEventTools } from "./events";
+import { registerLinkedTools } from "./linked";
+import { registerSettingsTools } from "./settings";
+import { registerTodoTools } from "./todos";
 
 const metadataURL = `${baseURL}/.well-known/oauth-protected-resource/mcp`;
+const instructions = [
+  "FSC est un calendrier personnel et partagé ; ces outils permettent tout ce que fait le site.",
+  "Pour créer un événement, une tâche ou lier un calendrier, le choix commun (common) ou solo (solo) est obligatoire : si l’utilisateur ne l’a pas indiqué, demande-lui avant d’appeler l’outil.",
+  "Utilise le calendarId renvoyé par list_calendars. Les fins de journées entières sont exclusives. Les horaires locaux utilisent un fuseau IANA ; pour une heure ambiguë, demande le décalage UTC.",
+  "Pour modifier ou supprimer, lis d’abord l’élément pour obtenir sa version ; un conflit de version signifie qu’il faut relire.",
+  "Demande toujours l’accord explicite de l’utilisateur avant une action destructive ou sensible (suppressions, quitter le Commun, invitations, liens d’abonnement, révocation de connexion, SMTP) puis passe confirm à true quand l’outil l’exige.",
+  "Les adresses secrètes (liens d’invitation ou d’abonnement) ne doivent être montrées qu’à l’utilisateur.",
+].join(" ");
 function unauthorized() {
-  return new Response("Authentification OAuth requise.", { status: 401, headers: { "WWW-Authenticate": `Bearer resource_metadata="${metadataURL}", scope="calendar:read event:create"`, "Cache-Control": "no-store" } });
+  return new Response("Authentification OAuth requise.", { status: 401, headers: { "WWW-Authenticate": `Bearer resource_metadata="${metadataURL}", scope="${scopes.filter(s => s !== "offline_access").join(" ")}"`, "Cache-Control": "no-store" } });
 }
 export async function handleMCP(request: Request) {
   productionReady();
@@ -36,10 +48,8 @@ export async function handleMCP(request: Request) {
   let parsedBody;
   try { parsedBody = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
   catch { return Response.json({ jsonrpc: "2.0", error: { code: -32700, message: "JSON invalide" }, id: null }, { status: 400 }); }
-  const server = new McpServer({ name: "fsc", version: "1.0.0" }, {
-    instructions: "FSC est un calendrier personnel et partagé. Pour créer un événement, le choix commun (common) ou solo (solo) est obligatoire. Si l’utilisateur ne l’a pas indiqué, demande-lui de choisir avant d’appeler create_event. Utilise le calendarId renvoyé par list_calendars. Les fins de journées entières sont exclusives. Les horaires locaux utilisent un fuseau IANA ; pour une heure ambiguë, demande le décalage UTC.",
-  });
-  const invoke = async (scope: string, fn: () => Promise<unknown>) => {
+  const server = new McpServer({ name: "fsc", version: "2.0.0" }, { instructions });
+  const invoke: ToolContext["invoke"] = async (scope, fn) => {
     try {
       if (!principal.scopes.includes(scope)) throw new DomainError(`Autorisation manquante : ${scope}. Reconnecte FSC avec cette autorisation.`, 403);
       // Revalidate for every tool, including concurrent/batched protocol calls.
@@ -48,16 +58,8 @@ export async function handleMCP(request: Request) {
       return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
     } catch (error) { return { isError: true, content: [{ type: "text" as const, text: errorMessage(error) }] }; }
   };
-  server.registerTool("list_calendars", { description: "Lister les agendas accessibles avec leur visibilité et leurs droits.", inputSchema: z.object({}) }, async () => invoke("calendar:read", async () =>
-    (await listCalendars(principal.userId)).map(c => ({ id: c.id, name: c.kind === "common" ? "Commun" : "Solo", visibility: c.kind, canRead: true, canWrite: true }))));
-  server.registerTool("list_events", {
-    description: "Consulter les événements d’un agenda sur une plage de dates ISO 8601 avec décalage UTC. Maximum 366 jours. Utiliser nextCursor pour la suite.",
-    inputSchema: z.object({ calendarId: z.string().min(1).max(200), from: z.iso.datetime({ offset: true }), to: z.iso.datetime({ offset: true }), cursor: z.string().max(20).optional() }),
-  }, async input => invoke("calendar:read", () => listEvents(principal.userId, { ...input, from: new Date(input.from), to: new Date(input.to) })));
-  server.registerTool("create_event", {
-    description: "Créer un événement avec tags facultatifs. visibility est obligatoire : common ou solo. Si ce choix manque dans la demande, demander à l’utilisateur avant d’appeler cet outil. calendarId doit correspondre à cette visibilité.",
-    inputSchema: eventSchema.extend({ calendarId: z.string().min(1).max(200) }),
-  }, async input => invoke("event:create", () => saveEvent(principal.userId, input)));
+  const context: ToolContext = { server, userId: principal.userId, invoke };
+  for (const register of [registerEventTools, registerTodoTools, registerSettingsTools, registerLinkedTools, registerAdminTools]) register(context);
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
   try {

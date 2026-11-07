@@ -368,18 +368,41 @@ un administrateur pour ajouter le connecteur.
 
 FSC utilise Better Auth OAuth Provider, PKCE S256, CIMD et des jetons opaques.
 La vérification interne du fournisseur contrôle chaque requête et chaque outil,
-avec audience `/mcp` et scopes `calendar:read` / `event:create`. `offline_access`
+avec audience `/mcp` et les scopes `calendar:read`, `event:write`, `todo:write`, `settings:write`,
+`linked:write`, `travel:write` et `admin` (SMTP, réservé aux administrateurs). `offline_access`
 permet la rotation des refresh tokens. Les inscriptions OAuth dynamiques et les
 interfaces d’administration des clients/ressources sont désactivées ; utiliser
 l’option d’identité publiée de Claude.
 
 Outils disponibles :
 
-| Outil | Entrées principales |
-| --- | --- |
-| `list_calendars` | aucune |
-| `list_events` | `calendarId`, `from`, `to`, `cursor` facultatif ; plage ISO avec décalage, maximum 366 jours |
-| `create_event` | `calendarId`, `visibility` (`common` ou `solo`), `title`, `temporalData`, tags/description/lieu facultatifs |
+| Outil | Scope | Entrées principales |
+| --- | --- | --- |
+| `list_calendars` | `calendar:read` | aucune |
+| `list_events` | `calendar:read` | `from`, `to` (ISO avec décalage, 366 jours max), `calendarId`, `cursor`, `limit` facultatifs |
+| `get_event` | `calendar:read` | `eventId` ; renvoie aussi le rappel personnel |
+| `export_ics` | `calendar:read` | `calendarId` |
+| `list_todos`, `get_settings`, `list_linked_calendars` | `calendar:read` | aucune |
+| `list_travel_days` | `calendar:read` | `startDate`, `endDate` |
+| `create_event` | `event:write` | `calendarId`, `visibility` (`common` ou `solo`), `title`, `temporalData`, tags/description/lieu/`reminder` facultatifs |
+| `update_event` | `event:write` | mêmes champs que la création + `eventId`, `version`, `confirmVisibility` |
+| `delete_event` | `event:write` | `eventId`, `version`, `confirm: true` |
+| `set_event_reminder` | `event:write` | `eventId`, `reminder` (`inherit`, `off`, `custom`) |
+| `create_todo`, `update_todo` | `todo:write` | `title`, `visibility`, `dueDate` ; `todoId` et `version` pour la modification |
+| `set_todo_status`, `delete_todo`, `set_todo_email` | `todo:write` | `todoId`, `version`, `completed` / `confirm: true` / `enabled` |
+| `save_preferences` | `settings:write` | fuseau, délai, mode, tags, canaux |
+| `invite_partner`, `revoke_invitation`, `accept_invitation`, `leave_common_calendar` | `settings:write` | `email`, `invitationId`, `token`, `confirm: true` |
+| `rotate_feed`, `revoke_feed` | `settings:write` | `calendarId` |
+| `list_oauth_connections`, `revoke_oauth_connection` | `settings:write` | `clientId`, `confirm: true` |
+| `add_linked_calendar`, `refresh_linked_calendar`, `set_linked_calendar_enabled`, `remove_linked_calendar` | `linked:write` | `name`, `url`, `visibility`, `id`, `enabled`, `confirm: true` |
+| `set_travel_days` | `travel:write` | `startDate`, `endDate`, `marked` |
+| `get_smtp_config`, `save_smtp_config`, `test_smtp` | `admin` | paramètres SMTP |
+
+Tout ce que fait le site est donc possible par MCP, sauf la connexion, la gestion du mot de passe,
+la création de compte (CLI uniquement) et l’abonnement push d’un navigateur. Les actions
+destructives exigent `confirm: true`, et les instructions du serveur demandent à Claude de
+recueillir l’accord de l’utilisateur avant. Les connexions déjà autorisées doivent être
+reconnectées pour obtenir les nouveaux scopes.
 
 `temporalData` vaut soit `{ "allDay": false, "start": "2027-03-10T19:00:00+01:00",
 "end": "2027-03-10T20:00:00+01:00", "timeZone": "Europe/Paris" }`, soit

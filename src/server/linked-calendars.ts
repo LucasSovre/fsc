@@ -45,6 +45,11 @@ async function ownSource(db: Connection, userId: string, id: string) {
   if (!source) throw new DomainError("Calendrier lié introuvable ou géré par une autre personne.", 404);
   return source;
 }
+export async function addAndSyncLinkedCalendar(userId: string, raw: unknown) {
+  const id = await addLinkedCalendar(userId, raw);
+  try { await syncLinkedCalendar(id, undefined, new Date(), userId); return { id, synced: true }; }
+  catch { return { id, synced: false }; }
+}
 export async function setLinkedCalendarEnabled(userId: string, id: string, enabled: boolean) {
   return transaction(async db => {
     const source = await ownSource(db, userId, id);
