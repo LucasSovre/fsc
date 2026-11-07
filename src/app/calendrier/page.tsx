@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Temporal } from "temporal-polyfill";
 import { requireUser } from "../../server/session";
 import { listEvents, settings } from "../../server/calendar";
-import { dayInstant } from "../../server/validation";
+import { dayInstant, localDate } from "../../server/validation";
 import { EventList } from "../components/event-list";
 import { MonthSwipe } from "../components/month-swipe";
 import { listTravelDays } from "../../server/travel";
@@ -20,6 +20,17 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
   const travelDays = await listTravelDays(user.id, { startDate: first.toString(), endDate: first.with({ day: month.daysInMonth }).toString() });
   const previousHref = `/calendrier?mois=${month.subtract({ months: 1 })}`;
   const nextHref = `/calendrier?mois=${month.add({ months: 1 })}`;
+  const monthEvents = (await listEvents(user.id, { from: dayInstant(first.toString(), profile.timeZone), to: dayInstant(first.add({ months: 1 }).toString(), profile.timeZone), limit: 500 })).events;
+  const marks = new Map<string, { common: number; solo: number }>();
+  for (const event of monthEvents) {
+    const start = Temporal.PlainDate.from(event.allDay ? event.startDate! : localDate(event.startsAt!, profile.timeZone));
+    const last = Temporal.PlainDate.from(event.allDay ? event.endDate! : localDate(new Date(event.endsAt!.getTime() - 1), profile.timeZone)).subtract({ days: event.allDay ? 1 : 0 });
+    for (let date = Temporal.PlainDate.compare(start, first) < 0 ? first : start; Temporal.PlainDate.compare(date, last) <= 0 && date.month === month.month; date = date.add({ days: 1 })) {
+      const mark = marks.get(date.toString()) ?? { common: 0, solo: 0 };
+      mark[event.visibility === "common" ? "common" : "solo"]++;
+      marks.set(date.toString(), mark);
+    }
+  }
   const result = await listEvents(user.id, { from: dayInstant(day, profile.timeZone), to: dayInstant(selected.add({ days: 1 }).toString(), profile.timeZone), cursor: query.page });
   return <><h1>Calendrier</h1>
     <p className="calendar-create"><Link className="button-link" href={`/evenements/nouveau?jour=${day}`}>Créer un événement ce jour</Link></p>
@@ -37,10 +48,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
     <table className="calendar-grid"><caption className="sr-only">{monthTitle}</caption><thead><tr>{["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"].map(d => <th scope="col" key={d}>{d}</th>)}</tr></thead><tbody>
       {Array.from({ length: Math.ceil((first.dayOfWeek - 1 + month.daysInMonth) / 7) }, (_, week) => <tr key={week}>{Array.from({ length: 7 }, (_, index) => {
         const date = gridStart.add({ days: week * 7 + index });
+        const mark = marks.get(date.toString()), total = mark ? mark.common + mark.solo : 0;
         const travelers = travelDays.filter(travel => travel.day === date.toString());
         return <td key={index}>{date.month === month.month ? <Link href={`/calendrier?jour=${date}`} data-travel={travelers.length > 0} data-today={date.equals(today)} aria-current={date.equals(selected) ? "date" : undefined}>
           <span aria-hidden="true">{date.equals(selected) ? <strong>{date.day}</strong> : date.day}</span>
-          <span className="sr-only">{`${date}${date.equals(today) ? ", aujourd’hui" : ""}`}</span>
+          {total > 0 && <span className="day-dots" aria-hidden="true">{mark!.common > 0 && <i data-visibility="common" />}{mark!.solo > 0 && <i data-visibility="solo" />}{total > 2 && <b>+</b>}</span>}
+          <span className="sr-only">{`${new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))}${date.equals(today) ? ", aujourd’hui" : ""}${total > 0 ? `, ${total} événement${total > 1 ? "s" : ""}` : ""}`}</span>
           {travelers.length > 0 && <span className="sr-only travel-detail">{travelers.map(travel => `, ${travel.name} en déplacement`).join("")}</span>}
         </Link> : " "}</td>;
       })}</tr>)}
