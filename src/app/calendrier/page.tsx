@@ -33,10 +33,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
   }
   const result = await listEvents(user.id, { from: dayInstant(day, profile.timeZone), to: dayInstant(selected.add({ days: 1 }).toString(), profile.timeZone), cursor: query.page });
   return <><h1>Calendrier</h1>
-    <p className="calendar-create"><Link className="button-link" href={`/evenements/nouveau?jour=${day}`}>Créer un événement ce jour</Link></p>
-    <p className="field-help"><Link href="/calendriers-lies">Lier un autre calendrier</Link></p>
-    <TravelForm day={day} />
-    <TravelCalendar key={user.id} userId={user.id}>
+    <TravelCalendar key={user.id} userId={user.id} menu={<TravelForm day={day} />}>
     <div className="month-toolbar"><h2>{monthTitle}</h2>
       <nav className="month-nav" aria-label="Navigation des mois">
         <Link href={previousHref} aria-label="Mois précédent" title="Mois précédent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg></Link>
@@ -59,7 +56,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
       })}</tr>)}
     </tbody></table>
     </MonthSwipe>
-    <h2>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`))}</h2>
+    <div className="day-heading"><h2>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`))}</h2>
+      <Link className="button-link day-add" href={`/evenements/nouveau?jour=${day}`}>Créer<span className="sr-only"> un événement ce jour</span></Link></div>
     <div className="travel-detail">{travelDays.filter(travel => travel.day === day).map(travel => <p className="travel-person" key={travel.userId}>{travel.name} en déplacement</p>)}</div>
     <EventList events={result.events} zone={profile.timeZone} />
     {result.nextCursor && <p><Link href={`/calendrier?jour=${day}&page=${result.nextCursor}`}>Événements suivants de ce jour</Link></p>}

@@ -12,7 +12,7 @@ function subscribe(notify: () => void) {
   };
 }
 
-export function TravelCalendar({ userId, children }: { userId: string; children: ReactNode }) {
+export function TravelCalendar({ userId, menu, children }: { userId: string; menu: ReactNode; children: ReactNode }) {
   const key = `fsc:travel-view:${userId}`;
   const [fallback, setFallback] = useState<boolean | null>(null);
   const visible = useSyncExternalStore(subscribe, () => {
@@ -20,20 +20,23 @@ export function TravelCalendar({ userId, children }: { userId: string; children:
     try { return localStorage.getItem(key) === "true"; } catch { return false; }
   }, () => false);
   return <div className="travel-calendar" data-show-travel={visible}>
+    {visible && <p className="travel-legend"><span aria-hidden="true" /> Fond pêche : en déplacement</p>}
+    {children}
+    <details className="travel-menu"><summary>Déplacements</summary>
     <label className="travel-toggle"><input type="checkbox" role="switch" checked={visible} onChange={event => {
       const value = event.target.checked;
       try { localStorage.setItem(key, String(value)); setFallback(null); }
       catch { setFallback(value); }
       window.dispatchEvent(new Event("fsc-travel-view"));
     }} /> Afficher les déplacements</label>
-    {visible && <p className="travel-legend"><span aria-hidden="true" /> Fond pêche : en déplacement</p>}
-    {children}
+      {menu}
+    </details>
   </div>;
 }
 
 export function TravelForm({ day }: { day: string }) {
-  return <details className="travel-form">
-    <summary>Marquer un déplacement</summary>
+  return <div className="travel-form">
+    <p><strong>Marquer des jours de déplacement</strong></p>
     <p className="field-help">Tes déplacements sont visibles par ton partenaire dans FSC uniquement, sans export ICS ni rappel.</p>
     <ActionForm key={day} action={travelAction}>
       <label>Du <input type="date" name="startDate" defaultValue={day} required /></label>
@@ -44,5 +47,5 @@ export function TravelForm({ day }: { day: string }) {
         <button type="submit" name="operation" value="remove">Retirer mon marquage</button>
       </div>
     </ActionForm>
-  </details>;
+  </div>;
 }
