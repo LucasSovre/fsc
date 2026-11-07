@@ -2,6 +2,7 @@ import type { Todo } from "../../server/types";
 import { deleteTodoAction, todoStatusAction } from "../actions";
 import { ActionForm } from "./action-form";
 import { TodoForm } from "./todo-form";
+import { TodoToggle } from "./todo-toggle";
 
 export function TodoList({ todos, today }: { todos: Todo[]; today: string }) {
   const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "UTC" });
@@ -10,9 +11,7 @@ export function TodoList({ todos, today }: { todos: Todo[]; today: string }) {
     <p className={!todo.completedAt && todo.dueDate && todo.dueDate < today ? "todo-overdue" : "field-help"}>
       {todo.dueDate ? <>{!todo.completedAt && todo.dueDate < today ? "En retard · " : "Échéance · "}<time dateTime={todo.dueDate}>{date.format(new Date(`${todo.dueDate}T12:00:00Z`))}</time></> : "Sans échéance"}
     </p>
-    <ActionForm action={todoStatusAction}><input type="hidden" name="id" value={todo.id} /><input type="hidden" name="version" value={todo.version} /><input type="hidden" name="completed" value={todo.completedAt ? "false" : "true"} />
-      <button>{todo.completedAt ? "Remettre à faire" : "Marquer comme terminée"}</button>
-    </ActionForm>
+    <ActionForm action={todoStatusAction}><TodoToggle id={todo.id} version={todo.version} title={todo.title} completed={!!todo.completedAt} /></ActionForm>
     <details className="todo-edit"><summary>Modifier ou supprimer</summary>
       <TodoForm todo={todo} canCommon={todo.visibility === "common"} />
       <ActionForm action={deleteTodoAction}>

@@ -55,7 +55,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
         return <td key={index}>{date.month === month.month ? <Link href={`/calendrier?jour=${date}`} data-travel={travelers.length > 0} data-today={date.equals(today)} aria-current={date.equals(selected) ? "date" : undefined}>
           <span aria-hidden="true">{date.equals(selected) ? <strong>{date.day}</strong> : date.day}</span>
           {total > 0 && <span className="day-dots" aria-hidden="true">{mark!.common > 0 && <i data-visibility="common" />}{mark!.solo > 0 && <i data-visibility="solo" />}{total > 2 && <b>+</b>}</span>}
-          <span className="sr-only">{`${new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))}${date.equals(today) ? ", aujourd’hui" : ""}${total > 0 ? `, ${total} événement${total > 1 ? "s" : ""}` : ""}`}</span>
+          <span className="sr-only">{`${new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))}${date.equals(today) ? ", aujourd’hui" : ""}${total > 0 ? `, ${total} événement${total > 1 ? "s" : ""} (${mark!.common} commun, ${mark!.solo} solo)` : ""}`}</span>
           {travelers.length > 0 && <span className="sr-only travel-detail">{travelers.map(travel => `, ${travel.name} en déplacement`).join("")}</span>}
         </Link> : " "}</td>;
       })}</tr>)}

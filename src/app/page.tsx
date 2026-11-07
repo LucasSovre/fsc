@@ -26,9 +26,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     {!result.events.length && <div className="empty-state"><p>Aucun événement à venir.</p><p><Link className="button-link" href="/evenements/nouveau">Créer un événement</Link></p></div>}
     {[...groups].map(([day, events]) => <section key={day}>
       <h2>{dayTitle(day)}</h2>
-      <EventList events={events} zone={profile.timeZone} />
+      <EventList events={events} zone={profile.timeZone} ongoingBefore={today} />
     </section>)}
-    {result.nextCursor && <p><Link href={`/?page=${result.nextCursor}`}>Événements suivants</Link></p>}
-    {page && <p><Link href="/">Revenir au début</Link></p>}
+    {result.nextCursor && <p><Link className="button-link button-secondary" href={`/?page=${result.nextCursor}`}>Voir la suite</Link></p>}
+    {page && <p><Link className="button-link button-secondary" href="/">Revenir au début</Link></p>}
   </>;
 }

@@ -22,6 +22,7 @@ const isActive = (pathname: string, href: string) => {
 
 export function Navigation() {
   const pathname = usePathname();
+  if (pathname === "/evenements/nouveau" || pathname.endsWith("/modifier")) return null;
   return <MotionConfig reducedMotion="user">
     <nav className="bottom-nav" aria-label="Navigation principale">
       {destinations.map(({ href, label, icon }) => {

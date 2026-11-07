@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import localFont from "next/font/local";
 import { ViewTransition } from "react";
@@ -8,6 +8,8 @@ import { Navigation } from "./components/navigation";
 import "./globals.css";
 
 const manrope = localFont({ src: "./fonts/Manrope.ttf", weight: "400 700", display: "swap", variable: "--font-manrope" });
+
+export const viewport: Viewport = { themeColor: "#272725" };
 
 export const metadata: Metadata = {
   title: { default: "FSC — Fucking Simple Calendar", template: "%s — FSC" },

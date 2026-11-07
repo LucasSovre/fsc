@@ -86,6 +86,7 @@ test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et 
   await page.getByRole("button", { name: "Enregistrer mes réglages" }).click();
   await expect(page.getByText("Réglages enregistrés.", { exact: true })).toBeVisible();
   const soloSection = page.locator("section").filter({ has: page.getByRole("heading", { name: "Solo", exact: true }) }).last();
+  await page.getByText("Afficher les exports et abonnements").click();
   await soloSection.getByRole("button", { name: "Créer ou renouveler le lien d’abonnement" }).click();
   const feedLink = soloSection.locator('a[href*="/abonnements/"]');
   await expect(feedLink).toBeVisible();
@@ -93,6 +94,7 @@ test("deux comptes sur téléphone : formulaires natifs, partage, solo, tags et 
   const response = await page.request.get(feedURL!);
   expect(response.status()).toBe(200);
   expect(await response.text()).toContain("Solo confidentiel");
+  await soloSection.getByLabel("Confirmer la révocation du lien actuel").check();
   await soloSection.getByRole("button", { name: "Révoquer le lien d’abonnement" }).click();
   await expect(soloSection.getByText("Abonnement révoqué.", { exact: true })).toBeVisible();
   expect((await page.request.get(feedURL!)).status()).toBe(404);

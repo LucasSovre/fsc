@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Temporal } from "temporal-polyfill";
 import type { Event, EventAttachment, EventReminderChoice, Profile, Tag } from "../../server/types";
 import { eventAction } from "../actions";
@@ -12,7 +13,7 @@ export function EventForm({ event, attachments = [], zone, tags, canCommon, crea
   const end = event?.endsAt ? Temporal.Instant.from(event.endsAt.toISOString()).toZonedDateTimeISO(tz).toPlainDateTime() : start.add({ hours: 1 });
   const startDate = event?.startDate || start.toPlainDate().toString();
   const endDate = event?.endDate ? Temporal.PlainDate.from(event.endDate).subtract({ days: 1 }).toString() : startDate;
-  return <ActionForm action={eventAction}>
+  return <><p><Link href={event ? `/evenements/${event.id}` : "/calendrier"}>Annuler</Link></p><ActionForm action={eventAction}>
     <fieldset className="visibility-field"><legend>Qui peut voir cet événement ?</legend>
       <p className="field-help">Choisis Solo ou Commun pour continuer.</p>
       <div className="visibility-options">
@@ -37,5 +38,5 @@ export function EventForm({ event, attachments = [], zone, tags, canCommon, crea
     <EventReminderFields initial={reminder} defaults={reminderDefaults} />
     </details>
     <p className="sticky-submit"><button type="submit">{event ? "Enregistrer les modifications" : "Créer l’événement"}</button></p>
-  </ActionForm>;
+  </ActionForm></>;
 }

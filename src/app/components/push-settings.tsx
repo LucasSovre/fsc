@@ -33,6 +33,6 @@ export function PushSettings({ publicKey }: { publicKey: string }) {
   return <section><h2>Notifications sur cet appareil</h2>
     <p>Sur iPhone (iOS 16.4 ou plus récent) : ouvre FSC dans Safari, touche Partager puis Ajouter à l’écran d’accueil. Ouvre FSC depuis son icône et active les notifications ici.</p>
     <p><button type="button" disabled={pending} onClick={enable}>Activer sur cet appareil</button>{" "}<button type="button" disabled={pending} onClick={disable}>Désactiver sur cet appareil</button></p>
-    <p>Après activation, coche le canal Notifications web dans tes préférences et enregistre.</p><p role="status">{message}</p>
+    <p>Après activation, coche le canal Notifications web dans les préférences de rappel ci-dessus et enregistre.</p><p role="status">{message}</p>
   </section>;
 }
