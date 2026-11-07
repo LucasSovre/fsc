@@ -17,6 +17,4 @@ export function assertProductionConfig() {
   if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32)
     throw new Error("BETTER_AUTH_SECRET doit contenir au moins 32 caractères.");
   assertPublicURL(baseURL);
-  if (!process.env.POSTGRES_PASSWORD) throw new Error("POSTGRES_PASSWORD est obligatoire.");
-  if (!process.env.SMTP_HOST) throw new Error("SMTP_HOST est obligatoire pour les e-mails de connexion.");
-}
+  if (!process.env.POSTGRES_PASSWORD) throw new Error("POSTGRES_PASSWORD est obligatoire.");}

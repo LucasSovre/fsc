@@ -14,7 +14,7 @@ export type Sender = { email: typeof sendMail; push: (subscription: webpush.Push
 const defaultSender: Sender = {
   email: sendMail,
   push: async (subscription, payload) => {
-    webpush.setVapidDetails(process.env.VAPID_SUBJECT || `mailto:${process.env.SMTP_FROM_ADDRESS || "admin@example.com"}`, process.env.VAPID_PUBLIC_KEY!, process.env.VAPID_PRIVATE_KEY!);
+    webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:admin@example.com", process.env.VAPID_PUBLIC_KEY!, process.env.VAPID_PRIVATE_KEY!);
     return webpush.sendNotification(subscription, payload, { TTL: 300, timeout: 15_000 });
   },
 };

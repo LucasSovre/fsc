@@ -227,3 +227,22 @@ model TravelDay {
   @@unique([userId, day])
   @@map("travelDay")
 }
+
+model AppAdmin {
+  userId String @id
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("appAdmin")
+}
+
+model SmtpSetting {
+  id String @id
+  host String
+  port Int
+  secure Boolean @default(false)
+  user String?
+  encryptedPassword String?
+  from String
+  updatedAt DateTime @default(now())
+  @@check(expression: sql`port >= 1 AND port <= 65535`, name: "smtp_port")
+  @@map("smtpSetting")
+}

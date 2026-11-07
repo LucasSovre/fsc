@@ -1,13 +1,15 @@
-import { requireUser } from "../../server/session";
+import { isAdmin, requireUser } from "../../server/session";
+import { getSmtpSummary } from "../../server/smtp";
 import { settings } from "../../server/calendar";
 import { rows } from "../../server/database";
 import { ActionForm } from "../components/action-form";
-import { feedAction, inviteAction, leaveAction, preferencesAction, revokeInvitationAction } from "../actions";
+import { feedAction, inviteAction, leaveAction, preferencesAction, revokeInvitationAction, smtpAction, smtpTestAction } from "../actions";
 import { PushSettings } from "../components/push-settings";
 import { ZoneInput } from "../components/event-fields";
 export default async function Page() {
   const user = await requireUser(), state = await settings(user.id), p = state.profile;
   const feeds = await rows<{ calendarId: string }>('SELECT "calendarId" FROM feed WHERE "userId"=$1', [user.id]);
+  const admin = await isAdmin(user.id), smtp = { admin, config: admin ? await getSmtpSummary() : null };
   return <><h1>Réglages</h1>
     <h2>Mes rappels</h2><p>Ces préférences s’appliquent à tes événements solo et aux événements communs, uniquement pour toi.</p>
     <ActionForm action={preferencesAction}>
@@ -41,5 +43,20 @@ export default async function Page() {
         </ActionForm>
       </section>)}
     </section>
+    {smtp.admin && <section><h2>E-mail (SMTP)</h2><p>Serveur utilisé pour les e-mails de connexion, les invitations et les rappels. Réservé aux administrateurs.</p>
+      <ActionForm action={smtpAction}>
+        <p><label>Hôte <input name="host" defaultValue={smtp.config?.host ?? ""} required /></label></p>
+        <p><label>Port <input name="port" type="number" min={1} max={65535} defaultValue={smtp.config?.port ?? 587} required /></label></p>
+        <p><label><input type="checkbox" name="secure" defaultChecked={smtp.config?.secure ?? false} /> Connexion sécurisée (TLS direct, port 465)</label></p>
+        <p><label>Utilisateur <input name="user" autoComplete="off" defaultValue={smtp.config?.user ?? ""} /></label></p>
+        <p><label>Mot de passe <input name="password" type="password" autoComplete="new-password" placeholder={smtp.config?.hasPassword ? "Inchangé" : ""} /></label></p>
+        <p><label>Expéditeur <input name="from" defaultValue={smtp.config?.from ?? "FSC <fsc@example.com>"} required /></label></p>
+        <button>Enregistrer la configuration SMTP</button>
+      </ActionForm>
+      <ActionForm action={smtpTestAction}>
+        <p>Envoie un e-mail de test à ton adresse avec la configuration enregistrée.</p>
+        <button disabled={!smtp.config}>Tester le SMTP</button>
+      </ActionForm>
+    </section>}
   </>;
 }
