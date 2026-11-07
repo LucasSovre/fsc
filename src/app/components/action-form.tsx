@@ -2,6 +2,7 @@
 import { startTransition, useActionState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionState } from "../actions";
+import { CopyButton } from "./copy-button";
 
 export function ActionForm({ action, children }: { action: (state: ActionState, form: FormData) => Promise<ActionState>; children: ReactNode }) {
   const [state, submit, pending] = useActionState(action, {});
@@ -24,7 +25,7 @@ export function ActionForm({ action, children }: { action: (state: ActionState, 
     <div aria-live="polite">
       {pending && <p>En cours…</p>}
       {state.message && <p>{state.message}</p>}
-      {state.href && <><p><a href={state.href}>Ouvrir le lien</a></p><p><label>Adresse à copier <input readOnly value={state.href} /></label></p></>}
+      {state.href && <><p><a href={state.href}>Ouvrir le lien</a></p><p><label>Adresse à copier <input readOnly value={state.href} /></label></p><p><CopyButton value={state.href} /></p></>}
     </div>
   </form>;
 }
