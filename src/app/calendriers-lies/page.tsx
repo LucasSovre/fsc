@@ -10,7 +10,7 @@ export default async function Page() {
   const sources = await listLinkedCalendars(user.id);
   const canCommon = calendars.some(calendar => calendar.kind === "common");
   const format = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: profile.timeZone });
-  return <><h1>Calendriers liés</h1>
+  return <><p><Link href="/reglages">← Réglages</Link></p><h1>Calendriers liés</h1>
     <p className="page-intro">Ajoute le lien d’abonnement ICS d’un autre calendrier. FSC récupère ses créations, modifications et suppressions environ toutes les 15 minutes, tant que le worker fonctionne.</p>
     <p className="field-help">Les événements couvrent l’année passée et les deux années à venir. Les récurrences sont affichées comme des occurrences indépendantes. Les événements liés se modifient dans le calendrier source ; tes rappels restent personnalisables dans FSC.</p>
     <details><summary>Ajouter un calendrier lié</summary>
@@ -40,6 +40,5 @@ export default async function Page() {
         </ActionForm></details>
       </> : <p className="field-help">Ce lien est géré par l’autre personne du calendrier commun.</p>}
     </section>)}
-    <p><Link href="/calendrier">Revenir au calendrier</Link></p>
   </>;
 }
