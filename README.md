@@ -35,12 +35,12 @@ publient pas automatiquement. Les images Linux `amd64` partagent le package
 
 Un lancement manuel hors branche principale produit les tags de commit, sans
 remplacer `latest`. Les paramètres de
-base de données, SMTP et authentification restent des variables d’exécution :
+base de données et authentification restent des variables d’exécution (le SMTP se configure dans l’application) :
 aucun n’est requis pour construire ou publier les images.
 
 ## Démarrage Docker
 
-Prérequis : Docker Compose v2 et un SMTP. Pour un déploiement public, ajouter un
+Prérequis : Docker Compose v2 et un serveur SMTP, à renseigner ensuite dans Réglages. Pour un déploiement public, ajouter un
 domaine HTTPS et un reverse proxy.
 
 ```sh
@@ -52,7 +52,6 @@ Configurer au minimum :
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` : identifiants PostgreSQL. L’URL de connexion est construite automatiquement, avec encodage des caractères spéciaux.
 - `BETTER_AUTH_SECRET` : secret aléatoire d’au moins 32 caractères, stable entre déploiements.
 - `BETTER_AUTH_URL` : `http://localhost:3000` pour Docker local, ou l’origine HTTPS publique exacte, sans chemin, par exemple `https://calendar.example.com`.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` : vérification, invitations, reset et rappels.
 - Facultatif : clés Web Push générées une fois avec `bunx web-push generate-vapid-keys`, puis `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
 
 ```sh
@@ -103,6 +102,19 @@ dans les arguments de commande. Un e-mail de vérification est envoyé et reste
 obligatoire avant connexion. Une tentative de connexion à un compte non vérifié
 renvoie cet e-mail si nécessaire. La réinitialisation du mot de passe reste disponible.
 
+### Administrateur et configuration SMTP
+
+Le SMTP se configure dans Réglages, section « E-mail (SMTP) », visible uniquement
+par les administrateurs, avec un bouton de test d’envoi. Le mot de passe SMTP est
+stocké chiffré en base. Créer le premier administrateur (compte déjà vérifié, sans
+SMTP requis) :
+
+```sh
+docker compose exec app node --import tsx scripts/create-account.ts --email admin@example.com --name Admin --admin
+```
+
+Pour promouvoir un compte existant : même commande avec `--email` et `--admin` seulement.
+
 ### HTTPS et proxy
 
 Pointer le proxy sur `127.0.0.1:3000`, conserver les chemins et les méthodes HTTP, et
@@ -137,23 +149,23 @@ passage réussi. Ne pas lancer plusieurs réplicas de `app` (il embarque le work
 Pour capturer les e-mails sans les envoyer à leurs destinataires :
 
 ```sh
-# Dans .env : SMTP_HOST=mailpit, SMTP_PORT=1025, SMTP_SECURE=false,
-# SMTP_USER et SMTP_PASSWORD vides.
 docker compose --profile mailpit up -d --build
 ```
 
+Dans Réglages, section E-mail (SMTP), saisir l’hôte `mailpit`, le port `1025`, sans
+connexion sécurisée ni identifiants, puis utiliser « Tester le SMTP ».
 Boîte de réception locale : <http://localhost:8025>. Le profil Mailpit ne relaie pas
 les messages vers Internet. Utiliser un SMTP réel lors du déploiement public.
 
 ## Développement direct
 
-Prérequis : Bun, Node compatible avec Next.js, PostgreSQL 17 et un SMTP de développement.
+Prérequis : Bun, Node compatible avec Next.js, PostgreSQL 17 et un serveur SMTP de développement.
 
 ```sh
 bun install
 # Dans .env : POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
 # POSTGRES_HOST=localhost et POSTGRES_PORT=5432 (ou ton serveur PostgreSQL),
-# BETTER_AUTH_URL=http://localhost:3000 et SMTP de développement.
+# BETTER_AUTH_URL=http://localhost:3000.
 bun run migrate
 bun run dev
 # Dans un second terminal avec la même configuration :
@@ -406,8 +418,8 @@ bun run build
 
 Les tests d’intégration exigent volontairement un nom de base terminant par `_test`.
 Ils créent des comptes uniques et n’effacent pas une base existante. Préparer une
-base migrée et un Mailpit local, puis définir les variables `POSTGRES_*`, `SMTP_HOST`,
-`SMTP_PORT`, `MAILPIT_URL` et `BETTER_AUTH_URL=http://localhost:3000` :
+base migrée et un Mailpit local, puis définir les variables `POSTGRES_*`, `SMTP_HOST`
+et `SMTP_PORT` (lues uniquement par les tests, qui enregistrent la config SMTP en base), `MAILPIT_URL` et `BETTER_AUTH_URL=http://localhost:3000` :
 
 ```sh
 bun run migrate

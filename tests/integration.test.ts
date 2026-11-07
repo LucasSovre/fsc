@@ -13,7 +13,7 @@ import { auth, createCLIAuth } from "../src/server/auth";
 import { addPushSubscription } from "../src/server/push";
 import { revokeConnection } from "../src/server/oauth";
 import { baseURL, mcpResource } from "../src/server/config";
-import { assertTestDatabase, authRequest, register, password } from "./helpers";
+import { assertTestDatabase, authRequest, register, password, seedSmtp } from "./helpers";
 
 assertTestDatabase();
 afterAll(async () => { await pool.end(); });
@@ -48,6 +48,7 @@ describe("FSC sur PostgreSQL", () => {
   }, 30000);
 
   test("adresse vérifiée obligatoire et réinitialisation du mot de passe à usage unique", async () => {
+    await seedSmtp();
     const email = `${randomUUID()}@fsc.test`;
     expect((await authRequest("/sign-up/email", { name: "Non vérifié", email, password })).ok).toBe(false);
     expect(await rows('SELECT id FROM "user" WHERE email=$1', [email])).toHaveLength(0);
