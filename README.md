@@ -17,6 +17,30 @@ Interface française en HTML natif et CSS, au format compact, avec la police Man
 
 Pas de création de séries récurrentes natives, de CalDAV ni de synchronisation bidirectionnelle. Les calendriers ICS liés sont lus et actualisés dans FSC, avec développement de leurs récurrences courantes.
 
+## Images publiées sur GitHub Container Registry
+
+Le workflow `.github/workflows/publish-container.yml` construit et publie les trois
+cibles du Dockerfile sur GHCR, sans secret ni variable à créer : il utilise le
+`GITHUB_TOKEN` fourni automatiquement et les permissions déclarées dans le workflow.
+Le nom du dépôt et sa branche principale sont détectés automatiquement.
+
+Publication à chaque push sur la branche principale, sur les tags `v*`, ou depuis
+**Actions → Publish containers to GHCR → Run workflow**. Les autres branches ne
+publient pas automatiquement. Les images Linux `amd64` partagent le package
+`ghcr.io/<propriétaire>/<dépôt>`, en minuscules :
+
+| Service | Branche principale | Tag Git `v1.2.3` | Commit précis |
+| --- | --- | --- | --- |
+| App | `latest` | `v1.2.3` | `sha-<SHA complet>` |
+| Worker | `worker` | `worker-v1.2.3` | `worker-sha-<SHA complet>` |
+| Migrations | `migrate` | `migrate-v1.2.3` | `migrate-sha-<SHA complet>` |
+
+Un lancement manuel hors branche principale produit les tags de commit, sans
+remplacer `latest`, `worker` ou `migrate`. Utiliser les trois images du même commit
+pour garder l’application, le worker et les migrations alignés. Les paramètres de
+base de données, SMTP et authentification restent des variables d’exécution :
+aucun n’est requis pour construire ou publier les images.
+
 ## Démarrage Docker
 
 Prérequis : Docker Compose v2 et un SMTP. Pour un déploiement public, ajouter un
