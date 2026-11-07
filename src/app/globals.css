@@ -71,6 +71,8 @@ main { padding: 8px 24px 24px; min-width: 0; }
 .bottom-nav a { min-width: 0; height: 62px; }
 .bottom-nav svg { flex: 0 0 22px; width: 22px; height: 22px; aspect-ratio: 1; }
 button, .button-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; max-width: 100%; border: 1px solid transparent; border-radius: var(--radius-pill); padding: 12px 20px; background: var(--color-ink); color: white; font-size: 14px; font-weight: 600; line-height: 1.45; text-align: center; text-decoration: none; cursor: pointer; overflow-wrap: anywhere; transition: background-color 180ms ease-out; }
+button.button-danger { background: transparent; color: var(--color-error); border-color: var(--color-error); }
+button.button-danger:hover:not(:disabled), button.button-danger:active:not(:disabled) { background: #fceeee; }
 button:hover:not(:disabled), .button-link:hover { background: #42423e; }
 button:active:not(:disabled), .button-link:active { background: #171716; }
 .account-actions button:hover:not(:disabled), .account-actions button:active:not(:disabled) { background: var(--color-neutral); }
