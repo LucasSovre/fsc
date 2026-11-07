@@ -15,6 +15,7 @@ const destinations = [
 const isActive = (pathname: string, href: string) => {
   if (href === "/") return pathname === "/";
   if (href === "/calendrier") return pathname === href || (pathname.startsWith("/evenements/") && pathname !== "/evenements/nouveau");
+  if (href === "/reglages" && (pathname.startsWith("/calendriers-lies") || pathname.startsWith("/claude"))) return true;
   return pathname === href || pathname.startsWith(`${href}/`);
 };
 
