@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: fsc_test
+  POSTGRES_USER: fsc
+  POSTGRES_PASSWORD: ci-only-password
+  BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+  SMTP_HOST: 127.0.0.1
+  SMTP_PORT: "1025"
+  MAILPIT_URL: http://127.0.0.1:8025
+
+jobs:
+  checks:
+    name: Lint, types et tests unitaires
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 26
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: node node_modules/prisma/dist/prisma.js contract emit
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun test tests/unit.test.ts
+      - run: bun run build
+
+  integration:
+    name: Tests d’intégration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: fsc
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: fsc_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fsc -d fsc_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.27.0
+        ports: ["1025:1025", "8025:8025"]
+    env:
+      BETTER_AUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 26
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: node node_modules/prisma/dist/prisma.js contract emit
+      - run: bun run migrate
+      - run: bun run test:integration
+
+  e2e:
+    name: Tests navigateur (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: fsc
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: fsc_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fsc -d fsc_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.27.0
+        ports: ["1025:1025", "8025:8025"]
+    env:
+      BETTER_AUTH_URL: http://localhost:3038
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 26
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: node node_modules/prisma/dist/prisma.js contract emit
+      - run: bun run migrate
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
