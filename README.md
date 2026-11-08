@@ -1,133 +1,160 @@
-# FSC — Fucking Simple Calendar
+# FSC (Fucking Simple Calendar)
 
-Un calendrier partagé pour deux, avec un choix **Commun / Solo** à chaque création.
-Interface française en HTML natif et CSS, au format compact, avec la police Manrope hébergée localement. Licence [WTFPL v2](LICENSE).
+FSC est un calendrier partagé pour deux personnes, auto-hébergeable. Chaque création d'événement ou de tâche se fait en **Commun** (visible par les deux membres) ou en **Solo** (privé). L'interface est en français. Licence [WTFPL v2](LICENSE).
 
 ## Fonctionnalités
 
-- Comptes individuels e-mail/mot de passe, vérification d’adresse et réinitialisation via Better Auth.
-- Un agenda solo privé par compte et un calendrier commun à deux, avec invitations nominatives de sept jours.
-- Accueil chronologique, navigation mensuelle, événements horaires ou sur plusieurs journées entières, tags multiples.
-- Onglet Todo : tâches Solo / Commun, échéance facultative, modification, fin/réouverture et suppression ; récapitulatif quotidien des retards par e-mail.
-- Modification partagée des événements communs ; seul le créateur peut changer leur visibilité.
-- Préférences de rappel personnelles : délai, e-mail, Web Push, tous les événements ou au moins un tag sélectionné. Un rappel personnalisé peut remplacer ces réglages pour un événement précis, pour soi uniquement.
-- Exports et abonnements ICS distincts, secrets et révocables, pour Commun et Solo.
-- Calendriers externes liés par URL ICS HTTPS/webcal : actualisation automatique, ajouts/modifications/suppressions et rappels personnels FSC.
-- Connecteur MCP OAuth pour Claude : lecture des agendas/événements et création avec visibilité obligatoire.
+* Comptes e-mail et mot de passe (12 caractères minimum), avec vérification de l'adresse et réinitialisation.
+* Un calendrier Solo privé par compte et un calendrier Commun à deux, relié par invitation nominative (7 jours, révocable). Quitter le Commun est possible.
+* Événements horaires (fuseau IANA) ou sur journées entières, tags libres, type facultatif (spectacle, sortie, vacances, visio, travail), lien http(s) et billets joints (PDF, PNG, JPEG, WebP).
+* Todo Solo ou Commun, avec échéance facultative. Une tâche non terminée est en retard dès le lendemain, et un récapitulatif par e-mail part chaque jour dès 9 h locales (activé par défaut).
+* Rappels par e-mail ou Web Push, réglables par profil (délai, canaux, tags) et par événement, pour soi seul.
+* Export et abonnement ICS par URL secrète, pour chaque calendrier.
+* Calendriers externes liés par URL ICS HTTPS, en lecture seule, synchronisés toutes les 15 minutes.
+* Jours de déplacement partagés avec le partenaire.
+* Connecteur MCP pour Claude et API REST `/api/v1` documentée en OpenAPI, avec clés d'API.
 
-Pas de création de séries récurrentes natives, de CalDAV ni de synchronisation bidirectionnelle. Les calendriers ICS liés sont lus et actualisés dans FSC, avec développement de leurs récurrences courantes.
+## Limites assumées
 
-## Images publiées sur GitHub Container Registry
+* Pas de récurrence native : seules les récurrences des calendriers ICS importés sont développées.
+* Pas de CalDAV ni de synchronisation bidirectionnelle.
+* Un calendrier Commun compte au plus deux membres (contrôlé côté serveur).
+* Un seul réplica de l'application : le conteneur embarque le worker.
+* Les billets sont stockés sur disque local et se sauvegardent séparément de la base.
 
-Le workflow `.github/workflows/publish-container.yml` construit et publie l’image
-unique du Dockerfile sur GHCR, sans secret ni variable à créer : il utilise le
-`GITHUB_TOKEN` fourni automatiquement et les permissions déclarées dans le workflow.
-Le nom du dépôt et sa branche principale sont détectés automatiquement.
+## Démarrage rapide avec Docker
 
-Publication à chaque push sur la branche principale, sur les tags `v*`, ou depuis
-**Actions → Publish containers to GHCR → Run workflow**, uniquement si la CI
-(`.github/workflows/ci.yml` : lint, types, tests unitaires, intégration et Playwright)
-réussit. Les autres branches ne publient pas automatiquement et lancent seulement la CI. Les images Linux `amd64` partagent le package
-`ghcr.io/<propriétaire>/<dépôt>`, en minuscules :
+Ce démarrage construit l'image localement et lance l'application sur `http://localhost:3000`.
 
-| Image | Branche principale | Tag Git `v1.2.3` | Commit précis |
-| --- | --- | --- | --- |
-| FSC (app + worker + migrations) | `latest` | `v1.2.3` | `sha-<SHA complet>` |
+Prérequis :
 
-Un lancement manuel hors branche principale produit les tags de commit, sans
-remplacer `latest`. Les paramètres de
-base de données et authentification restent des variables d’exécution (le SMTP se configure dans l’application) :
-aucun n’est requis pour construire ou publier les images.
+* Docker avec Docker Compose v2
+* Un clone de ce dépôt
 
-## Démarrage Docker
+1. Copiez le fichier d'exemple.
 
-Prérequis : Docker Compose v2 et un serveur SMTP, à renseigner ensuite dans Réglages. Pour un déploiement public, ajouter un
-domaine HTTPS et un reverse proxy.
+   ```sh
+   cp .env.example .env
+   ```
 
-```sh
-cp .env.example .env
-```
+2. Dans `.env`, définissez `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` (32 caractères aléatoires minimum) et `BETTER_AUTH_URL=http://localhost:3000`.
 
-Configurer au minimum :
+3. Construisez et démarrez les services.
 
-- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` : identifiants PostgreSQL. L’URL de connexion est construite automatiquement, avec encodage des caractères spéciaux.
-- `BETTER_AUTH_SECRET` : secret aléatoire d’au moins 32 caractères, stable entre déploiements.
-- `BETTER_AUTH_URL` : `http://localhost:3000` pour Docker local, ou l’origine HTTPS publique exacte, sans chemin, par exemple `https://calendar.example.com`.
-- Facultatif : clés Web Push générées une fois avec `bunx web-push generate-vapid-keys`, puis `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+   ```sh
+   docker compose up -d --build
+   ```
 
-```sh
-docker compose up -d --build
-docker compose ps
-docker compose logs -f app
-```
+   Résultat attendu : `docker compose ps` affiche les services `db`, `app` et `mailpit` démarrés, puis `app` passe en `healthy`.
 
-Le mode production des images Docker accepte HTTP sur `localhost`, `127.0.0.1` et
-`::1` pour les essais locaux. Une adresse publique exige HTTPS, notamment pour
-connecter Claude. Le message « Next.js Ready » affiche l’écoute interne HTTP du
-conteneur ; le reverse proxy assure le HTTPS public.
+4. Créez le premier administrateur (voir [Créer des comptes](#créer-des-comptes)), puis ouvrez `http://localhost:3000`.
 
-Compose démarre PostgreSQL, démarre le conteneur `app` qui applique les migrations, puis lance l’application et
-un worker unique dans le même conteneur. Une migration en échec empêche leur démarrage ; ne pas lancer plusieurs réplicas de `app`. L’application est exposée
-sur le port `3000` de l’hôte par défaut (`APP_PORT`) ; la base reste dans le réseau Docker. Les images tournent
-avec un utilisateur non-root. Les identifiants ne sont pas nécessaires au build.
+Le service `mailpit` démarre toujours avec `docker-compose.yaml`. Son interface est sur `http://127.0.0.1:8025`. Il capture les e-mails sans les envoyer : dans **Réglages**, renseignez l'hôte `mailpit` et le port `1025`.
 
-**Cette version repart de zéro** : l’ancien schéma de démonstration et ses migrations
-ont été remplacés. Utiliser une base vide et, pour une installation à côté de l’ancienne,
-un autre projet Compose (`docker compose -p fsc-v1 …`) et un autre port. Aucun script
-ne supprime ni ne réinitialise une base ou un volume existant.
+Au démarrage, le conteneur applique les migrations, puis lance le worker et Next.js. Une migration en échec empêche le démarrage.
 
-`docker compose down` conserve le volume PostgreSQL. Ne pas changer son mot de passe
-dans `.env` sans le changer également dans PostgreSQL. Une mise à jour normale utilise
-`docker compose up -d --build` ; ne pas régénérer les migrations sur le serveur.
+## Déployer l'image GHCR
 
-### Créer les comptes (CLI uniquement)
+`docker-compose-prod.yaml` utilise l'image publiée `ghcr.io/lucassovre/fsc:latest` au lieu d'un build local. Il définit PostgreSQL 17 et l'application, sans Mailpit, avec le port `3000:3000` fixe.
 
-L’inscription publique est désactivée côté serveur. Seul l’administrateur ayant
-accès au terminal peut créer un compte ; les invitations ne créent pas de compte.
+Prérequis :
 
-Avec Docker, après le démarrage de la base et les migrations :
+* Un serveur avec Docker Compose v2
+* Un nom de domaine en HTTPS devant l'application (voir [Reverse proxy et sécurité](#reverse-proxy-et-sécurité))
+* Un serveur SMTP, à renseigner dans **Réglages** après le premier démarrage
 
-```sh
-docker compose exec app node --import tsx scripts/create-account.ts --email alice@example.com --name Alice
-```
+1. Créez un `.env` à côté du fichier Compose avec `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` et `BETTER_AUTH_URL` (par exemple `https://calendar.example.com`).
+2. Démarrez les services.
 
-En développement local (connexion PostgreSQL configurée dans `.env`) :
+   ```sh
+   docker compose -f docker-compose-prod.yaml up -d
+   ```
 
-```sh
-bun run account:create --email alice@example.com --name Alice
-```
+3. Vérifiez l'état : `docker compose -f docker-compose-prod.yaml ps` doit afficher `app` en `healthy`.
+4. Pour mettre à jour, récupérez la nouvelle image puis recréez le conteneur.
 
-Le mot de passe est demandé deux fois, sans affichage. Pour une automatisation,
-`--password-stdin` lit le mot de passe sur l’entrée standard ; ne pas le mettre
-dans les arguments de commande. Un e-mail de vérification est envoyé et reste
-obligatoire avant connexion. Une tentative de connexion à un compte non vérifié
-renvoie cet e-mail si nécessaire. La réinitialisation du mot de passe reste disponible.
+   ```sh
+   docker compose -f docker-compose-prod.yaml pull app
+   docker compose -f docker-compose-prod.yaml up -d
+   ```
 
-### Administrateur et configuration SMTP
+> **Warning**
+> `docker-compose-prod.yaml` ne définit ni volume `uploads` ni `UPLOAD_DIR`. Les billets joints sont écrits dans le système de fichiers du conteneur et sont perdus quand il est recréé. Ajoutez un volume monté sur `/data/uploads` et la variable `UPLOAD_DIR=/data/uploads` avant d'utiliser les billets.
 
-Le SMTP se configure dans Réglages, section « E-mail (SMTP) », visible uniquement
-par les administrateurs, avec un bouton de test d’envoi. Le mot de passe SMTP est
-stocké chiffré en base. Créer le premier administrateur (compte déjà vérifié, sans
-SMTP requis) :
+## Configuration
 
-```sh
-docker compose exec app node --import tsx scripts/create-account.ts --email admin@example.com --name Admin --admin
-```
+Les variables se lisent dans `.env` (Compose) ou dans l'environnement du processus.
 
-Pour promouvoir un compte existant : même commande avec `--email` et `--admin` seulement.
+| Variable | Défaut | Description |
+| --- | --- | --- |
+| `POSTGRES_DB` | `fsc` | Nom de la base. |
+| `POSTGRES_USER` | `fsc` | Utilisateur PostgreSQL. |
+| `POSTGRES_PASSWORD` | aucun | Mot de passe PostgreSQL. Obligatoire en production, non vide. |
+| `POSTGRES_HOST` | `localhost` | Hôte de la base. Docker impose `db`. |
+| `POSTGRES_PORT` | `5432` | Port de la base. |
+| `APP_PORT` | `3000` | Port publié par `docker-compose.yaml`. |
+| `BETTER_AUTH_URL` | `http://localhost:3000` | Origine publique, sans chemin. Obligatoire en production. |
+| `BETTER_AUTH_SECRET` | aucun | Secret d'au moins 32 caractères en production. |
+| `UPLOAD_DIR` | `./uploads` | Dossier des billets. Docker utilise `/data/uploads`. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | vides | Clés Web Push. Sans elles, Web Push est refusé. |
+| `VAPID_SUBJECT` | `mailto:admin@example.com` | Contact associé aux clés VAPID. |
 
-Vérifier une adresse à la main, ou renvoyer l’e-mail de vérification (`--resend`) :
+En production, l'application refuse de démarrer correctement sans un secret de 32 caractères minimum, un mot de passe PostgreSQL non vide et une URL en HTTPS. HTTP reste accepté sur `localhost`, `127.0.0.1` et `[::1]`.
+
+> **Important**
+> `BETTER_AUTH_SECRET` chiffre aussi le mot de passe SMTP et les URL des calendriers liés. Le changer rend le mot de passe SMTP illisible et invalide les calendriers liés. Conservez-le avec vos sauvegardes.
+
+Il n'existe pas de variable SMTP applicative : le SMTP se règle dans l'interface.
+
+### Créer des comptes
+
+L'inscription publique est désactivée. Les comptes se créent uniquement en ligne de commande, et une invitation ne crée pas de compte.
+
+1. Créez l'administrateur. L'option `--admin` marque l'adresse comme vérifiée, sans SMTP.
+
+   ```sh
+   docker compose exec app node --import tsx scripts/create-account.ts --email admin@example.com --name Admin --admin
+   ```
+
+   Le mot de passe est demandé sans affichage. Pour un script, ajoutez `--password-stdin` et fournissez le mot de passe sur l'entrée standard.
+
+2. Connectez-vous, puis ouvrez **Réglages** pour configurer le SMTP.
+3. Créez les autres comptes avec la même commande, sans `--admin`. L'e-mail de vérification est obligatoire avant la connexion.
+
+Avec `--admin` sur un compte existant, la commande le promeut administrateur. Avec Compose de production, ajoutez `-f docker-compose-prod.yaml` après `docker compose`.
+
+### Configurer le SMTP
+
+Prérequis : être administrateur.
+
+1. Dans **Réglages**, ouvrez la section E-mail (SMTP).
+2. Renseignez l'hôte, le port, l'option sécurisée, l'expéditeur, et si besoin l'utilisateur et le mot de passe.
+3. Lancez le test d'envoi.
+
+Tant que le SMTP n'est pas configuré, les e-mails de vérification ne partent pas. Un administrateur peut alors vérifier une adresse depuis la liste des utilisateurs, ou en ligne de commande :
 
 ```sh
 docker compose exec app node --import tsx scripts/verify-account.ts --email alice@example.com
-docker compose exec app node --import tsx scripts/verify-account.ts --email alice@example.com --resend
 ```
 
-### HTTPS et proxy
+Ajoutez `--resend` pour renvoyer l'e-mail de vérification au lieu de valider l'adresse.
 
-Pointer le proxy sur `127.0.0.1:3000`, conserver les chemins et les méthodes HTTP, et
-transmettre l’origine HTTPS publique. Exemple de directives Nginx à placer dans un
-serveur TLS configuré pour ton domaine :
+### Activer Web Push
+
+1. Générez une paire de clés.
+
+   ```sh
+   bunx web-push generate-vapid-keys
+   ```
+
+2. Placez-les dans `VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY`, puis redémarrez l'application.
+3. Sur chaque appareil, activez-le dans les réglages et autorisez les notifications.
+
+Sur iPhone, Web Push exige iOS 16.4 ou plus récent et FSC ajouté à l'écran d'accueil. Les notifications sont génériques : le détail est chargé après authentification.
+
+## Reverse proxy et sécurité
+
+Placez FSC derrière un reverse proxy HTTPS et gardez le port de l'application inaccessible depuis Internet. Exemple Nginx, à placer dans un serveur TLS :
 
 ```nginx
 location / {
@@ -141,408 +168,172 @@ location / {
 }
 ```
 
-Le proxy doit **remplacer** les en-têtes d’adresse client, pas reprendre ceux envoyés
-par le navigateur. Ils servent à la limitation des tentatives de connexion. Garder le
-port de l’application inaccessible directement depuis Internet. Désactiver le cache
-sur les pages authentifiées, `/api/auth`, `/api/v1`, `/mcp`, `/exports` et `/abonnements`.
-Ne pas enregistrer les URL complètes d’invitations, abonnements ou reset dans les logs
-du proxy : elles contiennent des secrets.
-
-`GET /health` vérifie la configuration de production et l’accès au schéma. Le worker
-met à jour un heartbeat PostgreSQL ; son healthcheck échoue après deux minutes sans
-passage réussi. Ne pas lancer plusieurs réplicas de `app` (il embarque le worker).
-
-### E-mails de développement
-
-Pour capturer les e-mails sans les envoyer à leurs destinataires :
-
-```sh
-docker compose --profile mailpit up -d --build
-```
-
-Dans Réglages, section E-mail (SMTP), saisir l’hôte `mailpit`, le port `1025`, sans
-connexion sécurisée ni identifiants, puis utiliser « Tester le SMTP ».
-Boîte de réception locale : <http://localhost:8025>. Le profil Mailpit ne relaie pas
-les messages vers Internet. Utiliser un SMTP réel lors du déploiement public.
-
-## Développement direct
-
-Prérequis : Bun, Node compatible avec Next.js, PostgreSQL 17 et un serveur SMTP de développement.
-
-```sh
-bun install
-# Dans .env : POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
-# POSTGRES_HOST=localhost et POSTGRES_PORT=5432 (ou ton serveur PostgreSQL),
-# BETTER_AUTH_URL=http://localhost:3000.
-bun run migrate
-bun run dev
-# Dans un second terminal avec la même configuration :
-bun run worker
-```
-
-Le serveur de développement utilise Webpack pour éviter une boucle Fast Refresh
-observée avec Turbopack dans cette version de Next.js. Le build de production reste
-celui de Next.js.
-
-L’interface utilise les Server Components et Server Actions. Il n’existe aucune API
-REST de calendrier. Les mêmes services dans `src/server/calendar.ts` sont appelés
-par le site, MCP et les flux ICS. Les requêtes sont paramétrées et exécutées avec
-`pg` ; Prisma 8 possède le contrat de stockage et les migrations de toutes les tables.
-Better Auth utilise son adaptateur PostgreSQL officiel dans cette même base.
-
-### Contrat et migrations
-
-- `src/prisma/domain.prisma` contient les modèles FSC.
-- `scripts/auth-contract.ts` lit les schémas des versions installées de Better Auth,
-  OAuth Provider et CIMD, puis assemble `src/prisma/contract.prisma`.
-- `contract.json` et `contract.d.ts` sont générés par Prisma. Ne pas les modifier à la main.
-- `migrations/` contient la migration initiale et les migrations additives, leurs snapshots et le ref `db`. La migration `event_reminder_preferences` ajoute les réglages personnels par événement sans modifier les événements existants.
-
-Après une évolution métier ou une mise à jour de Better Auth :
-
-```sh
-bun run auth:contract
-bun run contract:emit
-bun run migration:plan --name describe_change
-# Relire les opérations, puis avancer le ref db au hash cible affiché :
-bunx prisma migration ref set db HASH_CIBLE
-bun run migrate
-bun run db:verify
-```
-
-Conserver dans Git le contrat, ses artefacts, la migration, le snapshot et le ref.
-Ne pas lancer la commande de migration propre à Better Auth : Prisma est l’unique
-responsable du schéma. La migration initiale est rejouable sans nouvelle opération
-quand elle est déjà appliquée.
-
-## Dates, rappels et confidentialité
-
-Les horaires sont enregistrés comme instants UTC accompagnés d’un fuseau IANA. Une
-heure locale inexistante ou ambiguë est refusée ; le formulaire propose un champ
-avec décalage explicite pour les heures ambiguës. Les journées entières ont une fin
-exclusive : pour le 10 mars uniquement, début le 10 et fin le 11.
-
-Le fuseau du navigateur est proposé au premier usage, avec repli `Europe/Paris`.
-Les préférences initiales sont 30 minutes, Tous les événements, canaux désactivés.
-
-Sur la création, la modification ou la fiche d’un événement, **Mon rappel** propose :
-
-- **Utiliser mes réglages habituels** : délai, canaux et filtre de tags personnels.
-- **Aucun rappel** : désactive uniquement les rappels de ce compte pour cet événement.
-- **Personnaliser ce rappel** : un délai en minutes, heures ou jours, et au moins un canal e-mail ou notification web. Ce choix remplace les réglages habituels, y compris le filtre de tags ; il reste indépendant des choix du partenaire.
-
-Le délai personnalisé est compris entre zéro et un an. Zéro vise l’heure de début ;
-pour une journée entière, la référence reste 9 h dans le fuseau du destinataire.
-Les notifications web exigent un appareil activé dans les réglages. Les changements
-de date replanifient les rappels en attente. Un rappel déjà envoyé ou dont le résultat
-est incertain n’est pas renvoyé. Si le délai est déjà passé mais que l’événement reste
-futur, le rappel peut partir au prochain passage du worker. La suppression d’un
-événement efface aussi ses préférences ; une perte d’accès retire les préférences
-personnelles correspondantes et annule les rappels en attente.
-
-Avant d’utiliser cette fonctionnalité sur une installation existante, appliquer les
-migrations (`bun run migrate` en local, ou la procédure Docker ci-dessus), puis
-redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
-
-Pour une journée entière, le rappel vise 9 h le premier jour dans le fuseau du
-destinataire, moins son délai. En mode Tags sélectionnés, un seul tag correspondant
-suffit ; une sélection vide ne déclenche rien.
-
-Le worker parcourt la file persistante toutes les 30 secondes. Une transaction
-recalcule les tâches en attente lors des modifications ou pertes d’accès. Un verrou
-PostgreSQL partagé avec les mutations protège la vérification finale et l’envoi.
-Les envois déjà effectués ne sont pas reprogrammés. Les rejets temporaires explicites
-sont réessayés avec délai ; un timeout ou un arrêt pendant l’envoi passe en résultat
-incertain et n’est jamais rejoué automatiquement. Un rattrapage n’est envoyé que si
-le point de référence de l’événement reste futur. Consulter les états `failed` ou
-`uncertain` dans les tables `reminder` et `delivery` pour diagnostiquer une livraison.
-Un délai de zéro minute bénéficie d’une tolérance de 60 secondes autour du début
-pour permettre le passage normal du worker ; au-delà, le rappel est périmé.
-
-Un rappel push correspond à un rappel logique par canal, livré une fois à chaque
-appareil abonné. Son contenu reste générique ; les détails sont chargés après
-authentification dans FSC. Les abonnements expirés sont supprimés. La déconnexion
-désabonne l’appareil courant. Aucun service worker ne met en cache les événements.
-
-Sur iPhone, Web Push nécessite iOS 16.4 ou plus récent et l’ouverture de FSC depuis
-son icône sur l’écran d’accueil. Dans les réglages, activer l’appareil, autoriser la
-notification, puis cocher Notifications web et enregistrer les préférences.
-
-Quitter le couple retire l’accès aux événements communs, même à ceux qu’on a créés,
-et annule les rappels correspondants. Le membre restant conserve les événements.
-Les tags personnels et préférences restent utilisables après le départ.
-
-Les abonnements ICS appartiennent à un compte et à un seul agenda. Leurs secrets
-sont stockés sous forme de hash, renouvelables et révocables. Les droits sont
-revérifiés à chaque lecture. Un téléphone ou destinataire peut cependant conserver
-une copie déjà téléchargée ; FSC ne contrôle pas sa fréquence d’actualisation.
-
-## Types, liens et billets
-
-Un événement peut avoir un type facultatif (spectacle, sortie, vacances, visio, travail), affiché en pastille
-et filtrable depuis le calendrier. Selon le type, le formulaire propose un lien (http/https) et des billets :
-PDF, PNG, JPEG ou WebP, 10 Mo et 10 fichiers au maximum par événement. Le lien figure dans l’export ICS
-(`URL`) et dans l’e-mail de rappel.
-
-Les billets sont stockés dans `UPLOAD_DIR` (volume Docker `uploads` monté sur `/data/uploads`) et servis
-uniquement aux personnes qui ont accès à l’événement. Les événements importés d’un calendrier lié n’ont ni
-type, ni lien, ni billet. La migration `event_types` ajoute `event.type`, `event.link` et la table
-`eventAttachment` (suppression en cascade) ; les données existantes sont inchangées.
-
-## Calendriers externes liés
-
-Depuis **Calendrier → Lier un autre calendrier**, ou le menu du logo, ouvrir
-**Calendriers liés**. Fournir un nom, le lien d’abonnement ICS HTTPS/webcal du
-calendrier source, puis choisir explicitement **Solo** ou **Commun**. L’adresse
-doit donner accès au flux ICS sans connexion interactive, et non à une page web.
-
-Le premier chargement a lieu à l’ajout, puis le worker vérifie les sources actives
-environ toutes les **15 minutes**. **Actualiser maintenant** force une vérification.
-Les événements, leurs titres, descriptions, lieux, horaires et catégories sont mis
-à jour ; les annulations et suppressions à la source retirent les copies FSC.
-Les identifiants FSC restent stables tant que l’UID et l’occurrence source restent
-identiques ; une actualisation sans changement ne modifie pas leur version.
-
-Les occurrences de l’**année passée et des deux années à venir** sont conservées.
-Les séries quotidiennes, hebdomadaires, mensuelles et annuelles courantes sont
-développées avec leurs exclusions et modifications d’occurrences. Les journées
-entières gardent leur fin exclusive ; les fuseaux IANA et les définitions
-VTIMEZONE sont pris en charge. Pour une date sans fuseau, celui du propriétaire
-du lien est utilisé ; un fuseau personnalisé est converti en UTC. Les événements
-sans titre deviennent « Sans titre ». Les sources doivent fournir des UID stables.
-
-Les séries `THISANDFUTURE`, les RDATE sous forme de périodes et les récurrences
-sous-journalières/complexes sont refusées. Le flux est limité à 2 Mo, 5 000 VEVENT,
-5 000 occurrences conservées et 50 000 itérations de récurrence. Un téléchargement
-ou une lecture invalide conserve intégralement la dernière copie réussie ; l’erreur
-est affichée dans la page du calendrier lié. Un calendrier ICS valide mais vide
-retire ses copies. La synchronisation applique chaque instantané dans une transaction.
-
-Les événements liés sont en lecture seule dans FSC : les modifier ou les supprimer
-dans le calendrier source. Les **rappels personnels** FSC restent configurables ;
-les VALARM, invitations et destinataires du flux ne sont pas importés. Les rappels
-en attente suivent les changements de date ; ceux déjà envoyés ne sont pas rejoués.
-
-Seul le propriétaire du lien peut l’actualiser, le mettre en pause, le reprendre
-ou le supprimer. L’autre membre voit les événements et l’état d’un lien Commun,
-mais pas son adresse. Une perte d’accès du propriétaire à l’agenda cible arrête
-la synchronisation au prochain passage, sans ajouter de nouvelles données. Il peut
-toujours supprimer sa connexion. La pause conserve les copies et leurs rappels ;
-la suppression confirmée du lien efface uniquement ses événements FSC et leurs
-rappels, sans toucher au calendrier distant ni aux événements créés manuellement.
-
-Les URL peuvent contenir des secrets. Elles sont stockées avec un chiffrement
-AES-256-GCM dérivé de `BETTER_AUTH_SECRET`, ne sont pas réaffichées et ne figurent
-pas dans les messages d’erreur. Conserver ce secret : sa rotation nécessite de
-recréer les liens. Le téléchargement accepte seulement HTTPS public sur le port
-443, normalise webcal vers HTTPS, contrôle chaque résolution DNS et chaque
-redirection, puis fixe les adresses validées à la connexion. Les adresses internes,
-locales et réservées sont refusées. Aucun cookie ou identifiant de compte distant
-n’est transmis. Les téléchargements sont limités en temps et en taille.
-
-La migration `linked_calendars` est additive. Appliquer `bun run migrate` avant de
-redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
-Les tests serveur utilisent des flux de test, sans appeler de calendrier privé réel.
-
-## Todo et récapitulatif quotidien
-
-L’onglet **Todo** permet d’ajouter des tâches **Solo** ou **Commun**, avec une
-échéance facultative. Les membres peuvent modifier, terminer, rouvrir et supprimer
-les tâches communes ; les tâches Solo restent privées. Une modification concurrente
-est refusée avec une invitation à recharger. La visibilité reste celle choisie lors
-de la création.
-
-Une échéance est une date, valable jusqu’à la fin de cette journée dans le fuseau de
-chaque utilisateur. Dès le lendemain, une tâche non terminée apparaît **En retard**.
-Les tâches sans échéance ne deviennent pas en retard.
-
-Le worker existant envoie à partir de **9 h locales**, au premier passage disponible,
-un e-mail contenant les tâches en retard auxquelles le compte a encore accès.
-Il n’envoie rien si la liste est vide, si le compte n’est pas vérifié ou si le
-récapitulatif est désactivé. Une indisponibilité du worker peut décaler l’envoi
-jusqu’à sa reprise dans la même journée ; les journées précédentes ne sont pas
-rattrapées. Les tâches terminées, supprimées ou devenues inaccessibles sont retirées
-avant l’envoi. Les rappels d’événements restent indépendants.
-
-L’envoi quotidien est activé par défaut et peut être désactivé personnellement dans
-**Todo → Récapitulatif quotidien par e-mail**. Il utilise le fuseau défini dans les
-réglages et nécessite le SMTP déjà configuré pour FSC.
-
-Le journal `todoDigest`, unique par compte et date locale, évite les doublons, même
-avec des passages concurrents. Un rejet temporaire explicite est réessayé jusqu’à
-quatre tentatives ; un timeout ou un envoi interrompu devient `uncertain` et n’est
-pas rejoué automatiquement ce jour-là. Les échecs de la veille ne bloquent pas
-le récapitulatif du lendemain.
-
-La migration `todos_daily_digest` ajoute les tables Todo et leur journal d’envoi,
-ainsi que la préférence personnelle. Appliquer `bun run migrate` avant de
-redémarrer l’application (en Docker, redémarrer le conteneur `app` applique les migrations).
-
-## Claude et MCP
-
-Depuis **Connecter Claude** dans FSC, copier `https://TON-DOMAINE/mcp`. Dans Claude :
-Personnaliser → Connecteurs → Ajouter un connecteur personnalisé, coller l’adresse,
-choisir OAuth et **l’identité publiée de Claude**, puis se connecter à FSC et autoriser.
-Chaque membre utilise son propre compte. Un espace Team/Enterprise peut nécessiter
-un administrateur pour ajouter le connecteur.
-
-FSC utilise Better Auth OAuth Provider, PKCE S256, CIMD et des jetons opaques.
-La vérification interne du fournisseur contrôle chaque requête et chaque outil,
-avec audience `/mcp` et les scopes `calendar:read`, `event:write`, `todo:write`, `settings:write`,
-`linked:write`, `travel:write` et `admin` (SMTP, réservé aux administrateurs). `offline_access`
-permet la rotation des refresh tokens. Les inscriptions OAuth dynamiques et les
-interfaces d’administration des clients/ressources sont désactivées ; utiliser
-l’option d’identité publiée de Claude.
-
-Outils disponibles :
-
-| Outil | Scope | Entrées principales |
-| --- | --- | --- |
-| `list_calendars` | `calendar:read` | aucune |
-| `list_events` | `calendar:read` | `from`, `to` (ISO avec décalage, 366 jours max), `calendarId`, `cursor`, `limit` facultatifs |
-| `get_event` | `calendar:read` | `eventId` ; renvoie aussi le rappel personnel |
-| `export_ics` | `calendar:read` | `calendarId` |
-| `list_todos`, `get_settings`, `list_linked_calendars` | `calendar:read` | aucune |
-| `list_travel_days` | `calendar:read` | `startDate`, `endDate` |
-| `create_event` | `event:write` | `calendarId`, `visibility` (`common` ou `solo`), `title`, `temporalData`, tags/description/lieu/`reminder` facultatifs |
-| `update_event` | `event:write` | mêmes champs que la création + `eventId`, `version`, `confirmVisibility` |
-| `delete_event` | `event:write` | `eventId`, `version`, `confirm: true` |
-| `set_event_reminder` | `event:write` | `eventId`, `reminder` (`inherit`, `off`, `custom`) |
-| `create_todo`, `update_todo` | `todo:write` | `title`, `visibility`, `dueDate` ; `todoId` et `version` pour la modification |
-| `set_todo_status`, `delete_todo`, `set_todo_email` | `todo:write` | `todoId`, `version`, `completed` / `confirm: true` / `enabled` |
-| `save_preferences` | `settings:write` | fuseau, délai, mode, tags, canaux |
-| `invite_partner`, `revoke_invitation`, `accept_invitation`, `leave_common_calendar` | `settings:write` | `email`, `invitationId`, `token`, `confirm: true` |
-| `rotate_feed`, `revoke_feed` | `settings:write` | `calendarId` |
-| `list_oauth_connections`, `revoke_oauth_connection` | `settings:write` | `clientId`, `confirm: true` |
-| `add_linked_calendar`, `refresh_linked_calendar`, `set_linked_calendar_enabled`, `remove_linked_calendar` | `linked:write` | `name`, `url`, `visibility`, `id`, `enabled`, `confirm: true` |
-| `set_travel_days` | `travel:write` | `startDate`, `endDate`, `marked` |
-| `get_smtp_config`, `save_smtp_config`, `test_smtp` | `admin` | paramètres SMTP |
-
-Tout ce que fait le site est donc possible par MCP, sauf la connexion, la gestion du mot de passe,
-la création de compte (CLI uniquement) et l’abonnement push d’un navigateur. Les actions
-destructives exigent `confirm: true`, et les instructions du serveur demandent à Claude de
-recueillir l’accord de l’utilisateur avant. Les connexions déjà autorisées doivent être
-reconnectées pour obtenir les nouveaux scopes.
-
-`temporalData` vaut soit `{ "allDay": false, "start": "2027-03-10T19:00:00+01:00",
-"end": "2027-03-10T20:00:00+01:00", "timeZone": "Europe/Paris" }`, soit
-`{ "allDay": true, "startDate": "2027-03-10", "endDate": "2027-03-11" }`.
-
-Claude reçoit l’instruction de demander Commun ou Solo si l’utilisateur n’a pas
-précisé ce choix. Le schéma de l’outil refuse toute création sans visibilité.
-Les règles de tags, dates, accès et rappels sont identiques à celles du site.
-La révocation dans FSC supprime le consentement et tous les jetons de la connexion
-pour ce compte ; les connexions de l’autre membre restent valides.
-
-### API REST
-
-Chaque outil MCP a son équivalent REST sous `/api/v1`, avec les mêmes scopes et les
-mêmes règles métier. L’authentification se fait par **clé d’API** (en-tête `X-API-Key`,
-voir ci-dessous) ou par jeton OAuth (`Authorization: Bearer …`, audience `/mcp`). La spécification OpenAPI 3.1, générée à partir des schémas des outils (elle ne
-peut donc pas diverger), est publique : `GET /api/v1/openapi.json`.
-
-- `GET` et `DELETE` : les champs d’entrée passent en paramètres de requête ; `POST` et `PUT` : corps JSON.
-- Les identifiants de ressource sont dans le chemin (`/events/{eventId}`). Pour modifier ou supprimer, passer la `version` lue (conflit : 409).
-- Les suppressions et révocations n’exigent pas `confirm` : l’appel explicite vaut confirmation.
-- Erreurs : `{ "error": "message" }` avec le statut HTTP (400, 401, 403, 404, 409).
-- Exemple OAuth : `curl -H "Authorization: Bearer $TOKEN" "https://TON-DOMAINE/api/v1/events?from=2027-01-01T00:00:00%2B01:00&to=2027-02-01T00:00:00%2B01:00"`.
-
-**Clés d’API** : Réglages → Clés d’API. Chaque clé appartient à un compte, porte les
-autorisations (scopes) choisies à sa création (`admin` réservé aux administrateurs),
-s’affiche une seule fois et se révoque à tout moment ; seul son hash SHA-256 est stocké
-(20 clés maximum par compte). Elle n’est acceptée que sur `/api/v1` : `/mcp` reste en
-OAuth. Exemple : `curl -H "X-API-Key: fsc_…" https://TON-DOMAINE/api/v1/todos`.
-La migration `api_keys` crée la table : appliquer `bun run migrate` avant de redémarrer.
-
-Les jetons OAuth passent par le fournisseur existant : les inscriptions dynamiques de
-clients restent désactivées, un client doit donc être autorisé (identité CIMD) comme
-pour Claude.
-
-Références : [Better Auth OAuth Provider](https://better-auth.com/docs/plugins/oauth-provider),
-[connexion Claude](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp),
-[Web Push sur iPhone](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/).
-
-## Jours en déplacement
-
-Dans Calendrier, « Marquer un déplacement » permet d’ajouter ou retirer ses propres
-jours, du début à la fin inclus (366 jours maximum). « Afficher les déplacements »
-colore les jours concernés en pêche et affiche les noms dans le détail du jour,
-sans masquer les événements. Ce choix est mémorisé par compte dans le navigateur.
-Les jours sont partagés uniquement avec le partenaire actuel du calendrier commun.
-Ils ne figurent ni dans les exports/abonnements ICS, ni dans les rappels ou le MCP.
-
-La migration `travel_days` doit être appliquée avec `bun run migrate` avant de
-servir cette version. Elle ajoute une table indépendante sans modifier les événements.
-
-## Tests
-
-```sh
-bun run lint
-bun run typecheck
-bun test tests/unit.test.ts
-bun run build
-```
-
-Les tests d’intégration exigent volontairement un nom de base terminant par `_test`.
-Ils créent des comptes uniques et n’effacent pas une base existante. Préparer une
-base migrée et un Mailpit local, puis définir les variables `POSTGRES_*`, `SMTP_HOST`
-et `SMTP_PORT` (lues uniquement par les tests, qui enregistrent la config SMTP en base), `MAILPIT_URL` et `BETTER_AUTH_URL=http://localhost:3000` :
-
-```sh
-bun run migrate
-bun run test:integration
-```
-
-Pour les tests navigateur, utiliser `BETTER_AUTH_URL=http://localhost:3038` et
-les mêmes autres variables. Le runner démarre et arrête son propre serveur :
-
-```sh
-bunx playwright install chromium
-bun run test:e2e
-```
-
-Les tests couvrent deux membres et un tiers : permissions, conflits de versions,
-invitations, tags, changements de visibilité, abonnements/révocation ICS, rappels
-par personne et canal, reprise du worker, dates et changements d’heure, ainsi qu’un
-parcours OAuth local complet (PKCE, consentement, scopes, expiration, renouvellement,
-MCP et révocation). Le navigateur vérifie les formulaires sur une largeur de téléphone.
-
-### Recette réelle HTTPS — à effectuer après déploiement
-
-Les tests locaux n’attestent pas la connexion à un vrai compte Claude ni la réception
-Web Push sur un vrai téléphone. Avant d’annoncer cette validation complète :
-
-1. Créer deux comptes vérifiés et les relier au même calendrier commun.
-2. Connecter chacun à l’instance HTTPS depuis un vrai connecteur Claude.
-3. Créer depuis Claude un événement commun avec tags ; vérifier sa présence dans les deux comptes.
-4. Créer un solo ; vérifier qu’il est visible seulement par son propriétaire sur le site,
-   via MCP et dans son ICS, y compris après un essai d’accès direct par l’autre membre.
-5. Choisir des tags et canaux différents pour les deux comptes ; vérifier les e-mails
-   et notifications réels attendus pour le même événement commun, sans doublons.
-6. Modifier dates/tags/préférences puis tester suppression et départ du couple avant échéance.
-7. Révoquer Claude depuis FSC ; vérifier le refus immédiat de l’ancien accès et du
-   renouvellement, puis reconnecter et vérifier un nouveau consentement.
-
-## Sauvegarde et restauration
-
-Sauvegarder PostgreSQL et conserver séparément `.env` dans un stockage privé :
+* Le proxy doit écraser `X-Real-IP` et `X-Forwarded-For` : la limitation de débit des connexions, stockée en base, s'appuie sur ces en-têtes.
+* Ne mettez pas en cache les pages authentifiées, `/api/auth`, `/api/v1`, `/mcp`, `/exports` et `/abonnements`.
+* Excluez des journaux du proxy les URL d'invitation, d'abonnement et de réinitialisation : elles contiennent des secrets.
+* Les secrets ICS, les invitations et les clés d'API sont stockés hachés. Les jetons OAuth sont revérifiés à chaque appel.
+
+`GET /health` répond 503 si la configuration de production ou la base est invalide. Le healthcheck du worker échoue si son heartbeat a plus de deux minutes.
+
+## Connecter Claude (MCP)
+
+Prérequis : une instance en HTTPS et un compte vérifié.
+
+1. Dans FSC, ouvrez la page **Connecter Claude** (`/claude`) et copiez l'adresse `https://VOTRE-DOMAINE/mcp`.
+2. Dans Claude, ajoutez un connecteur personnalisé avec cette adresse.
+3. Choisissez OAuth et l'identité publiée de Claude, connectez-vous à FSC, puis autorisez l'accès.
+
+Chaque membre utilise son propre compte. Révoquez une connexion depuis la page `/claude` : l'accès et le renouvellement sont refusés aussitôt.
+
+Caractéristiques du serveur :
+
+* Endpoint `/mcp`, requêtes POST uniquement, corps de 64 Ko maximum.
+* OAuth Better Auth : `authorization_code` et `refresh_token`, PKCE, CIMD, jeton d'accès de 3600 s. L'enregistrement dynamique de clients est désactivé.
+* Audience `https://VOTRE-DOMAINE/mcp`. Métadonnées sous `/.well-known/oauth-authorization-server` et `/.well-known/oauth-protected-resource`.
+* Scopes : `calendar:read`, `event:write`, `todo:write`, `settings:write`, `linked:write`, `travel:write`, `admin` (SMTP, réservé aux administrateurs) et `offline_access`.
+
+Les outils couvrent les fonctions du site, sauf la connexion, le mot de passe, la création de compte et l'abonnement push. Les actions destructives exigent `confirm: true`, et la création d'événement ou de tâche exige une visibilité explicite.
+
+| Domaine | Outils |
+| --- | --- |
+| Calendriers et événements | `list_calendars`, `list_events`, `get_event`, `create_event`, `update_event`, `delete_event`, `set_event_reminder`, `export_ics` |
+| Todo | `list_todos`, `create_todo`, `update_todo`, `set_todo_status`, `delete_todo`, `set_todo_email` |
+| Réglages et partage | `get_settings`, `save_preferences`, `invite_partner`, `revoke_invitation`, `accept_invitation`, `leave_common_calendar`, `rotate_feed`, `revoke_feed`, `list_oauth_connections`, `revoke_oauth_connection` |
+| Calendriers liés et déplacements | `list_linked_calendars`, `add_linked_calendar`, `refresh_linked_calendar`, `set_linked_calendar_enabled`, `remove_linked_calendar`, `list_travel_days`, `set_travel_days` |
+| Administration | `get_smtp_config`, `save_smtp_config`, `test_smtp` |
+
+## API REST
+
+L'API `/api/v1` expose 35 opérations, miroir des outils MCP, avec les mêmes scopes et règles métier. La spécification OpenAPI est publique : `GET /api/v1/openapi.json`.
+
+* Authentification : en-tête `X-API-Key: fsc_…` ou `Authorization: Bearer` avec un jeton OAuth.
+* `GET` et `DELETE` : paramètres en query string. `POST` et `PUT` : corps JSON de 64 Ko maximum.
+* Les identifiants de ressource sont dans le chemin. Pour modifier ou supprimer, envoyez la `version` lue.
+* Erreurs : `{ "error": "message" }` avec le statut HTTP. Les réponses portent `Cache-Control: no-store`.
+
+### Créer une clé d'API
+
+Prérequis : un compte à l'adresse vérifiée.
+
+1. Dans **Réglages**, ouvrez la section des clés d'API et créez une clé.
+2. Choisissez ses scopes. Le scope `admin` est réservé aux administrateurs.
+3. Copiez la clé : elle n'est affichée qu'une fois.
+4. Appelez l'API.
+
+   ```sh
+   curl -H "X-API-Key: fsc_VOTRE-CLE" https://VOTRE-DOMAINE/api/v1/todos
+   ```
+
+   Résultat attendu : la liste JSON de vos tâches.
+
+Un compte peut avoir 20 clés. Seul le hash SHA-256 est stocké, et une clé n'est valable que sur `/api/v1`, pas sur `/mcp`.
+
+## Développement local
+
+Prérequis :
+
+* Bun 1.4.2
+* Node.js 26
+* PostgreSQL 17
+
+1. Installez les dépendances.
+
+   ```sh
+   bun install
+   ```
+
+2. Créez `.env` depuis `.env.example`, avec `POSTGRES_HOST=localhost`.
+3. Appliquez les migrations.
+
+   ```sh
+   bun run migrate
+   ```
+
+4. Lancez le serveur sur `http://localhost:3000`.
+
+   ```sh
+   bun run dev
+   ```
+
+5. Dans un second terminal, lancez le worker.
+
+   ```sh
+   bun run worker
+   ```
+
+Commandes utiles : `bun run lint`, `bun run typecheck`, `bun run build`, `bun run account:create`, `bun run account:verify`. Le serveur de développement utilise Webpack (`next dev --webpack`).
+
+### Contrat de données et migrations
+
+Prisma 8 (version candidate) porte le contrat de stockage. Le fichier `src/prisma/contract.prisma` est assemblé par `bun run auth:contract` à partir des schémas Better Auth et de `src/prisma/domain.prisma`. Les fichiers `contract.json` et `contract.d.ts` sont générés : ne les modifiez pas à la main.
+
+1. Éditez `src/prisma/domain.prisma`.
+2. Régénérez le contrat avec `bun run auth:contract`, puis `bun run contract:emit`.
+3. Planifiez la migration avec `bun run migration:plan --name DESCRIPTION`.
+4. Appliquez-la avec `bun run migrate`, puis contrôlez avec `bun run db:verify`.
+
+Versionnez le contrat, ses artefacts et le dossier `migrations/`. N'utilisez pas la commande de migration de Better Auth.
+
+## Tests et CI
+
+| Commande | Contenu |
+| --- | --- |
+| `bun run test` | Tests unitaires et API. |
+| `bun run test:integration` | Tests d'intégration. Exigent une base migrée dont le nom finit par `_test` et un Mailpit local. |
+| `bun run test:e2e` | Tests Playwright sur un viewport de téléphone. Démarrent `bun run dev --port 3038`. |
+
+Les tests d'intégration lisent `SMTP_HOST` et `SMTP_PORT` (défauts `127.0.0.1` et `1025`) et `MAILPIT_URL`. Pour Playwright, installez d'abord le navigateur avec `bunx playwright install chromium`.
+
+La CI (`.github/workflows/ci.yml`) s'exécute sur les push hors `main`, les pull requests et le lancement manuel. Elle comprend trois jobs : `checks` (lint, types, tests, build), `integration` (PostgreSQL 17 et Mailpit) et `e2e` (Playwright, Chromium).
+
+## Publication de l'image
+
+Le workflow `.github/workflows/publish-container.yml` publie l'image sur GHCR une fois la CI réussie. Il se déclenche sur la branche par défaut, sur les tags `v*` ou à la main. Il n'utilise aucun secret en dehors de `GITHUB_TOKEN`.
+
+| Tag | Quand |
+| --- | --- |
+| `sha-<SHA complet>` | Chaque publication. |
+| `latest` | Publication depuis la branche par défaut. |
+| `v1.2.3` | Publication d'un tag Git `v1.2.3`. |
+
+L'image est construite en `linux/amd64` sous `ghcr.io/<propriétaire>/<dépôt>`, en minuscules.
+
+## Architecture
+
+* `src/app` : routes App Router, actions serveur et composants.
+* `src/server` : logique métier (calendrier, todo, worker, e-mail, push, ICS, calendriers liés, billets, clés d'API), avec `mcp/` et `api/`.
+* `src/prisma` : contrat de données.
+* `migrations/app` : migrations horodatées.
+* `scripts` : worker, création et vérification de comptes, outils de contrat.
+* `tests` : tests unitaires, API, intégration et end-to-end.
+* `public/sw.js` : service worker pour les notifications, sans cache.
+
+Le worker boucle toutes les 30 secondes. Il réessaie un envoi temporairement rejeté jusqu'à 4 fois. Un envoi interrompu passe en `uncertain` et n'est jamais rejoué. Voir [PRODUCT.md](PRODUCT.md) et [DESIGN.md](DESIGN.md) pour le produit et le design.
+
+## Sauvegarde
+
+Sauvegardez la base, le dossier des billets et `.env`.
 
 ```sh
 docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > fsc.dump
 ```
 
-Restaurer dans une **nouvelle base vide**, puis pointer FSC vers cette base. Par exemple,
-avec les variables `POSTGRES_*` désignant le serveur et la nouvelle base :
+Restaurez dans une base vide avec `pg_restore --no-owner`. Conservez `BETTER_AUTH_SECRET` et les clés VAPID pour que les données chiffrées et les abonnements push restent valides.
 
-```sh
-PGHOST="${POSTGRES_HOST:-localhost}" PGPORT="${POSTGRES_PORT:-5432}" \
-PGUSER="$POSTGRES_USER" PGPASSWORD="$POSTGRES_PASSWORD" \
-pg_restore --no-owner --dbname="$POSTGRES_DB" fsc.dump
-```
+## Dépannage
 
-Sauvegarder aussi le volume `uploads` (billets), par exemple avec `docker run --rm -v fsc_uploads:/data -v "$PWD":/backup alpine tar czf /backup/uploads.tgz -C /data .` (le nom du volume dépend du projet Compose).
+| Symptôme | Cause probable | Solution |
+| --- | --- | --- |
+| `docker compose` s'arrête avec « Set POSTGRES_PASSWORD in .env » | Variable obligatoire absente. | Renseignez `POSTGRES_PASSWORD`, `BETTER_AUTH_URL` et `BETTER_AUTH_SECRET` dans `.env`. |
+| Le conteneur `app` ne démarre pas | Une migration échoue. | Lisez `docker compose logs app` et corrigez la cause avant de relancer. |
+| `/health` répond 503 | Configuration de production ou base invalide. | Vérifiez le secret (32 caractères), l'URL HTTPS et le mot de passe PostgreSQL. |
+| `app` reste `unhealthy` | Le worker n'a pas écrit son heartbeat depuis plus de 2 minutes. | Consultez les journaux de `app`. |
+| Aucun e-mail de vérification | SMTP non configuré. | Configurez le SMTP, ou vérifiez l'adresse avec `account:verify`. |
+| Les notifications push sont refusées | Clés VAPID absentes. | Générez et définissez les clés VAPID. |
+| Les billets disparaissent après une mise à jour | Pas de volume sur `UPLOAD_DIR`. | Montez un volume sur `/data/uploads`. |
+| Le mot de passe SMTP est illisible, les calendriers liés échouent | `BETTER_AUTH_SECRET` a changé. | Rétablissez l'ancien secret, ou resaisissez le SMTP et recréez les liens. |
+| Claude ne peut pas se connecter | URL non HTTPS ou proxy qui filtre `/mcp`. | Utilisez une origine HTTPS et laissez passer `/mcp` et `/.well-known`. |
 
-Restaurer aussi `BETTER_AUTH_SECRET` et les clés VAPID pour conserver la validité des
-sessions/clients chiffrés et abonnements push. Après restauration, exécuter les migrations
-en attente avant de redémarrer l’application (en Docker, le conteneur `app` les applique au démarrage). Ne pas remettre automatiquement
-en attente des rappels `dispatching`, `uncertain` ou `sent`.
+## Licence
+
+[WTFPL v2](LICENSE).
