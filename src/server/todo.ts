@@ -5,6 +5,7 @@ import { rows, transaction, type Connection } from "./database";
 import { DomainError, todoSchema } from "./validation";
 import type { Todo } from "./types";
 import { isMailConfigured } from "./smtp";
+import { notifyTodoShared } from "./share-notice";
 
 const accessible = `(c."ownerId"=$1 OR EXISTS(SELECT 1 FROM member m WHERE m."calendarId"=c.id AND m."userId"=$1))`;
 
@@ -22,6 +23,11 @@ async function todoIn(db: Connection, userId: string, id: string) {
   return todo;
 }
 export async function saveTodo(userId: string, raw: unknown, edit?: { id: string; version: number }) {
+  const todo = await persistTodo(userId, raw, edit);
+  if (!edit) void notifyTodoShared(todo);
+  return todo;
+}
+async function persistTodo(userId: string, raw: unknown, edit?: { id: string; version: number }) {
   const input = todoSchema.parse(raw);
   return transaction(async db => {
     const { profile } = await account(db, userId);
