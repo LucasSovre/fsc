@@ -5,6 +5,7 @@ import { DomainError, dateValue, eventDates, eventReminderSchema, eventSchema, l
 import { reconcileReminders } from "./reminder-plan";
 import { baseURL } from "./config";
 import { isMailConfigured } from "./smtp";
+import { notifyEventShared } from "./share-notice";
 
 export const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
 const secret = () => randomBytes(32).toString("base64url");
@@ -116,6 +117,11 @@ export async function saveEventReminder(userId: string, eventId: string, raw: un
   });
 }
 export async function saveEvent(userId: string, raw: unknown, edit?: { id: string; version: number; confirmVisibility?: boolean }, rawReminder?: unknown) {
+  const event = await persistEvent(userId, raw, edit, rawReminder);
+  if (!edit) void notifyEventShared(event);
+  return event;
+}
+async function persistEvent(userId: string, raw: unknown, edit?: { id: string; version: number; confirmVisibility?: boolean }, rawReminder?: unknown) {
   const input = eventSchema.parse(raw);
   const reminder = rawReminder === undefined ? undefined : eventReminderSchema.parse(rawReminder);
   return transaction(async db => {
