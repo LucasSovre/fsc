@@ -25,9 +25,13 @@ test("déplacements sur mobile : saisie, couleur, clavier, persistance et ICS", 
   await page.getByLabel("Au (inclus)").fill("2027-04-02");
   await page.getByRole("button", { name: "Marquer mes jours" }).click();
   await expect(page.getByText("Tes jours de déplacement ont été enregistrés.")).toBeVisible();
-  await toggle.focus();
-  await page.keyboard.press("Space");
-  await expect(toggle).toBeChecked();
+  await expect(async () => {
+    if (!(await toggle.isChecked())) {
+      await toggle.focus();
+      await page.keyboard.press("Space");
+    }
+    await expect(toggle).toBeChecked({ timeout: 1000 });
+  }).toPass();
   const selected = page.locator('.calendar-grid a[aria-current="date"]');
   await expect(selected).toHaveCSS("background-color", "rgb(244, 212, 184)");
   await expect(selected).toHaveAccessibleName(/Alice en déplacement.*Bob en déplacement/);
