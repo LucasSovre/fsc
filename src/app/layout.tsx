@@ -44,7 +44,7 @@ export default async function RootLayout({
           </ViewTransition>
         </main>
         <datalist id="timezones"><option value="Europe/Paris" /><option value="Europe/London" /><option value="America/Montreal" /><option value="America/New_York" /><option value="Asia/Tokyo" /><option value="UTC" /></datalist>
-        <footer className="app-footer"><p>FSC · logiciel libre · WTFPL v2</p></footer>
+        <footer className="app-footer"><p>FSC · logiciel libre · WTFPL v2 · <span title="Version">{process.env.NEXT_PUBLIC_APP_VERSION}</span></p></footer>
         {current?.user.emailVerified && <Navigation />}
         </div>
       </body>

@@ -15,6 +15,7 @@ COPY . .
 RUN node node_modules/prisma/dist/prisma.js contract emit
 
 FROM source AS builder
+ARG APP_VERSION
 RUN mkdir -p public && bun run build
 
 FROM builder AS runner
